@@ -1,11 +1,19 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { UserInput, Geo, JobMedia, GalleryMediaItem } from '../types';
 import { InputType, Tone, PanelCount, ContentDepth } from '../types';
 import { IconGenerate, IconSparkles, IconPlusCircle, IconTrash } from './Icons';
+import { useValidation } from '../hooks/useValidation';
+// FIX: The ValidationError type is not directly used in this component; it's inferred from the useValidation hook.
+import type { FormState } from '../services/validationService';
+import { ErrorSummary } from './ErrorSummary';
+import { toId } from '../services/fieldPath';
+import { focusAndScrollTo } from '../services/domFocus';
+import { t } from '../i18n';
 
 interface InputFormProps {
   onGenerate: (input: UserInput) => void;
   isLoading: boolean;
+  onValidationChange?: (validationState: { isValid: boolean; errorCount: number; warnCount: number }) => void;
 }
 
 const initialMediaState: JobMedia = {
@@ -14,18 +22,10 @@ const initialMediaState: JobMedia = {
     logoUrl: ''
 };
 
-// Central place for error messages to support i18n later
-const ERROR_MESSAGES = {
-    content_required: "Eine Beschreibung, URL oder JSON ist erforderlich.",
-    companyName_required: "Der Firmenname ist ein Pflichtfeld.",
-    city_required: "Die Stadt ist ein Pflichtfeld.",
-    topics_exceeded: (max: number) => `Die Anzahl der Themen darf die gewählte Anzahl Sektionen (${max}) nicht überschreiten.`,
-};
-
-export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
+export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onValidationChange }) => {
   const [inputType, setInputType] = useState<InputType>(InputType.TEXT);
   const [content, setContent] = useState<string>('');
-  const [geo, setGeo] = useState<Geo>({ companyName: '', city: '', region: '', zip: '', branch: '', street: '', phone: '', email: '', website: '' });
+  const [geo, setGeo] = useState<Geo>({ companyName: '', city: '', region: '', zip: '', branch: '', street: '', slug: '', phone: '', email: '', website: '' });
   const [tone, setTone] = useState<Tone>(Tone.NEUTRAL);
   const [panelCount, setPanelCount] = useState<PanelCount>(PanelCount.SIX);
   const [contentDepth, setContentDepth] = useState<ContentDepth>(ContentDepth.STANDARD);
@@ -33,57 +33,41 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
   const [topics, setTopics] = useState<string>('');
   const [outputFormat, setOutputFormat] = useState<'onepage' | 'legacy'>('onepage');
   const [media, setMedia] = useState<JobMedia>(initialMediaState);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const formRef = useRef<HTMLFormElement>(null);
 
-  const validate = useCallback(() => {
-    const newErrors: Record<string, string> = {};
-    if (!content.trim()) newErrors.content = ERROR_MESSAGES.content_required;
-    if (!geo.companyName.trim()) newErrors.companyName = ERROR_MESSAGES.companyName_required;
-    if (!geo.city.trim()) newErrors.city = ERROR_MESSAGES.city_required;
+  // --- New Validation Hook ---
+  const formStateForValidation = useMemo<FormState>(() => ({
+    content,
+    geo,
+    topics,
+    panelCount,
+  }), [content, geo, topics, panelCount]);
 
-    const topicList = topics.trim() ? topics.trim().split('\n').filter(Boolean) : [];
-    const maxTopics = parseInt(panelCount, 10);
-    if (topicList.length > maxTopics) {
-        newErrors.topics = ERROR_MESSAGES.topics_exceeded(maxTopics);
-    }
+  const { errors, errorsByPath, validateNow, isValid, errorCount, warnCount, firstErrorId } = useValidation(formStateForValidation);
 
-    return newErrors;
-  }, [content, geo.companyName, geo.city, topics, panelCount]);
-  
-  // Debounced Live Validation
   useEffect(() => {
-    const handler = setTimeout(() => {
-      // Don't show errors while user is typing in an empty form for the first time
-      const isDirty = content || geo.companyName || geo.city || topics;
-      if (isDirty) {
-        setErrors(validate());
-      }
-    }, 500); // 500ms debounce
-    return () => clearTimeout(handler);
-  }, [validate, content, geo.companyName, geo.city, topics, panelCount]);
+    if (onValidationChange) {
+      onValidationChange({ isValid, errorCount, warnCount });
+    }
+  }, [isValid, errorCount, warnCount, onValidationChange]);
 
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    const validationErrors = validate();
-    setErrors(validationErrors);
+    const validationErrors = validateNow();
 
-    if (Object.keys(validationErrors).length > 0) {
-        // Find first element with an error and focus it for A11y
-        const firstErrorKey = Object.keys(validationErrors)[0];
-        const errorElement = formRef.current?.querySelector(`[name="${firstErrorKey}"]`) as HTMLElement;
-        errorElement?.focus();
+    if (validationErrors.length > 0) {
+        const firstId = toId(validationErrors[0].path);
+        focusAndScrollTo(firstId);
         return;
     }
     
     const finalTopics = topics.trim() ? topics.trim().split('\n').filter(Boolean) : undefined;
     onGenerate({ inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics: finalTopics, outputFormat, media });
-  }, [onGenerate, validate, inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics, outputFormat, media]);
+  }, [onGenerate, validateNow, inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics, outputFormat, media]);
   
   const handleFillWithDummyData = useCallback(() => {
-    setErrors({}); // Clear any validation errors
     setInputType(InputType.TEXT);
     setContent(
       "Grünwalds Gartenzauber ist ein führender Garten- und Landschaftsbau-Betrieb in Musterstadt, Bayern. Seit 2005 gestalten wir private Gärten und öffentliche Grünanlagen. Unser Team aus erfahrenen Gärtnern und Landschaftsarchitekten bietet alles aus einer Hand: von der Planung über die Bepflanzung bis zur regelmäßigen Pflege, inklusive Teichbau und Baumschnitt. Wir legen Wert auf nachhaltige Materialien und heimische Pflanzen."
@@ -95,6 +79,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
       city: "Musterstadt",
       zip: "12345",
       region: "Bayern",
+      slug: "gruenwalds-gartenzauber-musterstadt",
       phone: "0123 456789",
       email: "info@gruenwalds-gartenzauber.de",
       website: "https://www.gruenwalds-gartenzauber.de"
@@ -126,7 +111,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
 
   const handleGeoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setGeo(prev => ({ ...prev, [name]: value.trimStart() }));
+    setGeo(prev => ({ ...prev, [name]: value }));
   };
   
   const handleContentChange = (value: string) => {
@@ -162,22 +147,23 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
   
   const topicList = topics.trim() ? topics.trim().split('\n').filter(Boolean) : [];
   const maxTopics = parseInt(panelCount, 10);
-  const isFormInvalid = Object.keys(errors).length > 0;
 
   const renderInputContent = () => {
-    const errorClass = errors.content ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent';
+    const errorObj = errorsByPath.get('content');
+    const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
+    const errorClass = error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent';
     const baseClass = 'w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition';
     const finalClass = `${baseClass} ${errorClass}`;
 
-    const errorElement = errors.content ? <p id="content-error" className="text-red-400 text-sm mt-1" role="alert">{errors.content}</p> : null;
+    const errorElement = error ? <p id="content-error" className="text-red-400 text-sm mt-1" role="alert">{error}</p> : null;
 
     const commonProps = {
         value: content,
         onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => handleContentChange(e.target.value),
         className: finalClass,
         name: "content",
-        'aria-invalid': !!errors.content,
-        'aria-describedby': errors.content ? "content-error" : undefined,
+        'aria-invalid': !!error,
+        'aria-describedby': error ? "content-error" : undefined,
     };
 
     switch (inputType) {
@@ -201,6 +187,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" noValidate>
+       <ErrorSummary errors={errors} firstErrorId={firstErrorId} />
        <div className="text-center -mt-2 mb-6">
           <button 
             type="button" 
@@ -224,7 +211,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
         </div>
       </div>
       
-      <div>{renderInputContent()}</div>
+      <div id={toId('content')}>{renderInputContent()}</div>
 
       <div>
         <label className="block text-lg font-semibold mb-3">2. Ausgabeformat</label>
@@ -241,15 +228,39 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
       <div>
         <label className="block text-lg font-semibold mb-3">3. GEO-Metadaten</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <input type="text" name="companyName" value={geo.companyName} onChange={handleGeoChange} placeholder="Firma / Unternehmensname" aria-invalid={!!errors.companyName} aria-describedby={errors.companyName ? "companyName-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${errors.companyName ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
-            {errors.companyName && <p id="companyName-error" className="text-red-400 text-sm mt-1" role="alert">{errors.companyName}</p>}
-          </div>
+          {(() => {
+            const errorObj = errorsByPath.get('geo.companyName');
+            const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
+            return (
+              <div id={toId('geo.companyName')}>
+                <input type="text" name="companyName" value={geo.companyName} onChange={handleGeoChange} placeholder="Firma / Unternehmensname" aria-invalid={!!error} aria-describedby={error ? "companyName-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
+                {error && <p id="companyName-error" className="text-red-400 text-sm mt-1" role="alert">{error}</p>}
+              </div>
+            );
+          })()}
+          {(() => {
+              const errorObj = errorsByPath.get('geo.slug');
+              const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
+              return (
+                <div id={toId('geo.slug')}>
+                    <input type="text" name="slug" value={geo.slug} onChange={handleGeoChange} placeholder="SEO-Slug (z.b. firmenname-stadt)" aria-invalid={!!error} aria-describedby={error ? "slug-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
+                    {error && <p id="slug-error" className="text-red-400 text-sm mt-1" role="alert">{error}</p>}
+                </div>
+              );
+          })()}
           <input type="text" name="branch" value={geo.branch} onChange={handleGeoChange} placeholder="Branche (z.B. Webdesign)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <input type="text" name="street" value={geo.street} onChange={handleGeoChange} placeholder="Straße & Hausnummer" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-          <div>
-            <input type="text" name="city" value={geo.city} onChange={handleGeoChange} placeholder="Stadt (z.B. Hamburg)" aria-invalid={!!errors.city} aria-describedby={errors.city ? "city-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${errors.city ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
-            {errors.city && <p id="city-error" className="text-red-400 text-sm mt-1" role="alert">{errors.city}</p>}
+          <div id={toId('geo.city')}>
+             {(() => {
+                const errorObj = errorsByPath.get('geo.city');
+                const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
+                return (
+                    <>
+                        <input type="text" name="city" value={geo.city} onChange={handleGeoChange} placeholder="Stadt (z.B. Hamburg)" aria-invalid={!!error} aria-describedby={error ? "city-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
+                        {error && <p id="city-error" className="text-red-400 text-sm mt-1" role="alert">{error}</p>}
+                    </>
+                );
+             })()}
           </div>
           <input type="text" name="zip" value={geo.zip} onChange={handleGeoChange} placeholder="PLZ (z.B. 20095)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <input type="text" name="region" value={geo.region} onChange={handleGeoChange} placeholder="Landkreis / Region" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
@@ -327,25 +338,33 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
         </div>
       </div>
 
-       <div>
+       <div id={toId('topics')}>
           <label htmlFor="topics" className="block text-lg font-semibold mb-3">7. Themen-Vorgaben (Optional)</label>
-          <div className="relative">
-              <textarea 
-                id="topics"
-                name="topics"
-                value={topics} 
-                onChange={e => setTopics(e.target.value)} 
-                placeholder="Ein Thema pro Zeile. Fehlende Themen werden automatisch ergänzt." 
-                rows={4} 
-                className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${errors.topics ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`}
-                aria-describedby="topics-helper topics-error"
-                aria-invalid={!!errors.topics}
-              />
-              <span id="topics-helper" className={`absolute bottom-2 right-2 text-xs font-mono px-2 py-1 rounded ${!!errors.topics ? 'bg-red-900/80 text-red-200' : 'bg-brand-primary text-brand-text-secondary'}`}>
-                {topicList.length}/{maxTopics}
-              </span>
-          </div>
-           {errors.topics && <p id="topics-error" className="text-red-400 text-sm mt-2" role="alert">{errors.topics}</p>}
+          {(() => {
+            const errorObj = errorsByPath.get('topics');
+            const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
+            return (
+              <>
+                <div className="relative">
+                  <textarea
+                    id="topics"
+                    name="topics"
+                    value={topics}
+                    onChange={e => setTopics(e.target.value)}
+                    placeholder="Ein Thema pro Zeile. Fehlende Themen werden automatisch ergänzt."
+                    rows={4}
+                    className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`}
+                    aria-describedby="topics-helper topics-error"
+                    aria-invalid={!!error}
+                  />
+                  <span id="topics-helper" className={`absolute bottom-2 right-2 text-xs font-mono px-2 py-1 rounded ${error ? 'bg-red-900/80 text-red-200' : 'bg-brand-primary text-brand-text-secondary'}`}>
+                    {topicList.length}/{maxTopics}
+                  </span>
+                </div>
+                {error && <p id="topics-error" className="text-red-400 text-sm mt-2" role="alert">{error}</p>}
+              </>
+            );
+          })()}
       </div>
 
       <div>
@@ -364,9 +383,9 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
             <span className="text-sm text-brand-text-secondary">Design vom letzten Job übernehmen</span>
         </div>
         <div className="text-center">
-            <button type="submit" disabled={isLoading || isFormInvalid} className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover disabled:bg-gray-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors duration-300 shadow-lg transform hover:scale-105">
+            <button type="submit" disabled={isLoading || !isValid} className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover disabled:bg-gray-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors duration-300 shadow-lg transform hover:scale-105">
               <IconGenerate className="w-5 h-5 mr-2"/>
-              {isLoading ? 'Job läuft...' : (isFormInvalid ? 'Bitte Fehler korrigieren' : 'Generierung starten')}
+              {isLoading ? t('form.jobRunning') : (!isValid ? t('gate.fixErrors') : t('form.startGeneration'))}
             </button>
         </div>
       </div>

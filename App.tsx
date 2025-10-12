@@ -9,11 +9,13 @@ import { SystemCheckPanel } from './components/SystemCheckPanel';
 import { startJob, getJobStatus, controlJob, getTopicSuggestions, initJobFromStorage, clearPersistedJob } from './services/jobService';
 import type { UserInput, Job, Sixpack, CIColors, SectionLabels, PanelSegmentsLockState, PanelResult } from './types';
 import { FLAGS } from './flags';
+import { initI18n, setLocale } from './i18n';
 
 const POLLING_INTERVAL = 2500; // 2.5 seconds
 const MIGRATION_BANNER_KEY = 'onepage_migration_banner_dismissed';
 
 const App: React.FC = () => {
+  const [i18nLoaded, setI18nLoaded] = useState(false);
   const [job, setJob] = useState<Job | null>(() => {
     if (FLAGS.PERSISTENCE_MVP) {
       return initJobFromStorage();
@@ -27,7 +29,19 @@ const App: React.FC = () => {
   const [isAutoRun, setIsAutoRun] = useState<boolean>(true);
   const [topicSuggestions, setTopicSuggestions] = useState<string[]>([]);
   const [showMigrationBanner, setShowMigrationBanner] = useState<boolean>(!localStorage.getItem(MIGRATION_BANNER_KEY));
+  const [validationState, setValidationState] = useState({ isValid: true, errorCount: 0, warnCount: 0 });
   
+  // Initialize i18n and set locale based on browser language on initial load
+  useEffect(() => {
+    const initializeApp = async () => {
+      await initI18n();
+      const userLang = navigator.language.split('-')[0];
+      setLocale(userLang === 'en' ? 'en' : 'de');
+      setI18nLoaded(true);
+    };
+    initializeApp();
+  }, []);
+
   const isJobRunning = useMemo(() => job?.state === 'running' || job?.state === 'queued', [job]);
 
   // Sync jobId state when job object changes
@@ -275,6 +289,17 @@ const App: React.FC = () => {
     };
   }, [job]);
 
+  if (!i18nLoaded) {
+    return (
+      <div className="min-h-screen bg-brand-primary flex items-center justify-center text-brand-text">
+        <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-brand-accent"></div>
+            <p className="mt-4 text-lg">Anwendung wird geladen...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="min-h-screen bg-brand-primary font-sans">
@@ -301,7 +326,7 @@ const App: React.FC = () => {
             <p className="text-center text-brand-text-secondary mb-8">
               Erzeugen Sie optimierte Content-Sektionen oder eine vollständige One-Page-Seite.
             </p>
-            <InputForm onGenerate={handleStartJob} isLoading={isJobRunning} />
+            <InputForm onGenerate={handleStartJob} isLoading={isJobRunning} onValidationChange={setValidationState} />
           </div>
 
           {isSystemCheckVisible && (
@@ -333,6 +358,7 @@ const App: React.FC = () => {
             <div className="mt-12">
               <SixpackRenderer 
                 job={job}
+                validationState={validationState}
                 onUpdatePanelSummary={handleUpdatePanelSummary}
                 onUpdatePanelTitle={handleUpdatePanelTitle}
                 onUpdateCIColors={handleUpdateCIColors}

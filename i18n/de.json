@@ -1,0 +1,16 @@
+{
+  "val.required": "Das Feld '{field}' ist ein Pflichtfeld.",
+  "val.slugInvalid": "Der Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.",
+  "val.companyNameLength": "Der Firmenname muss zwischen 3 und 120 Zeichen lang sein.",
+  "val.topicsMax": "Die Anzahl der Themen darf die gewählte Anzahl Sektionen ({count}) nicht überschreiten.",
+  "val.contentRequired": "Eine Beschreibung, URL oder JSON ist erforderlich.",
+  "sum.heading.one": "1 Fehler – bitte prüfen",
+  "sum.heading.other": "{count} Fehler – bitte prüfen",
+  "sum.pleaseCorrect": "Bitte korrigieren Sie die markierten Felder, um fortzufahren.",
+  "sum.firstBtn": "Zur ersten Fehlerstelle springen",
+  "gate.blocked": "Export gesperrt: Bitte Fehler im Eingabeformular beheben.",
+  "gate.fixErrors": "Bitte Fehler korrigieren",
+  "report.download": "Report herunterladen",
+  "form.startGeneration": "Generierung starten",
+  "form.jobRunning": "Job läuft..."
+}

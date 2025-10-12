@@ -40,6 +40,29 @@ export type ExportProfile =
 
 export type HealthStatus = 'green' | 'yellow' | 'red' | 'neutral';
 
+// --- i18n specific types ---
+
+export type I18nKey =
+  | 'val.required'
+  | 'val.slugInvalid'
+  | 'val.companyNameLength'
+  | 'val.topicsMax'
+  | 'val.contentRequired'
+  | 'sum.heading'
+  | 'sum.pleaseCorrect'
+  | 'sum.firstBtn'
+  | 'gate.blocked'
+  | 'gate.fixErrors'
+  | 'report.download'
+  | 'form.startGeneration'
+  | 'form.jobRunning';
+
+export interface ValidationError {
+  path: string;
+  message: I18nKey;
+  params?: { [key: string]: string | number };
+}
+
 // --- Core Data Structures ---
 
 export interface Geo {
@@ -49,6 +72,7 @@ export interface Geo {
   zip: string;
   branch: string;
   street: string;
+  slug?: string;
   phone?: string;
   email?: string;
   website?: string;
@@ -91,6 +115,12 @@ export interface UserInput {
   topics?: string[];
   outputFormat: 'onepage' | 'legacy';
   media?: JobMedia;
+  toggles?: { 
+    faq?: boolean; 
+    howto?: boolean; 
+    article?: boolean; 
+    localBusiness?: boolean 
+  };
 }
 
 export interface PanelSection {
@@ -371,4 +401,18 @@ export interface LayoutConfig {
   show_footer: boolean;
   tokens: LayoutTokens;
   buttons: LayoutButton[];
+}
+
+export interface ValidationReport {
+  schemaVersion: string;
+  appVersion: string;
+  timestamp: string;
+  counts: { errors: number; warnings: number };
+  page: { title?: string; slug?: string; sectionCount: number };
+  toggles?: { 
+    faq?: boolean; 
+    howto?: boolean; 
+    article?: boolean; 
+    localBusiness?: boolean 
+  };
 }

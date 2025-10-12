@@ -7,6 +7,8 @@ import { ExplainabilityCard } from './ExplainabilityCard';
 import { IconJson, IconCopy, IconDownload, IconInfo, IconCss, IconEdit, IconShieldCheck, IconMonitor, IconTablet, IconPhone, IconArrowUp, IconArrowDown, IconPlusCircle, IconTrash } from './Icons';
 import { generateExportBundle, ExportBundle, generateSeoData, generateOnePageHtml } from '../services/exportService';
 import { defaultCIColors, designPresets, getContrastRatio, getWcagRating } from '../services/exportService';
+import { buildValidationReport, downloadJson } from '../services/reportService';
+import { t } from '../i18n';
 
 // --- Start of in-file component: DesignPresetModal ---
 const DesignPresetModal: React.FC<{
@@ -113,6 +115,7 @@ const DesignPresetModal: React.FC<{
 
 interface SixpackRendererProps {
   job: Job;
+  validationState: { isValid: boolean; errorCount: number; warnCount: number };
   onUpdatePanelSummary: (panelIndex: number, newSummary: string) => void;
   onUpdatePanelTitle: (panelIndex: number, newTitle: string) => void;
   onUpdateCIColors: (newColors: CIColors) => void;
@@ -165,7 +168,7 @@ const NumberInput: React.FC<{ label: string; value: number; onChange: (e: React.
 );
 
 export const SixpackRenderer: React.FC<SixpackRendererProps> = ({ 
-    job, onUpdatePanelSummary, onUpdatePanelTitle, onUpdateCIColors, onUpdateSectionLabels, onRegeneratePanel, onRegeneratePanelSegment, onTogglePanelLock, onReorderPanels, onJobControl, onAddNewPanel, onOpenAddPanelModal, topicSuggestions,
+    job, validationState, onUpdatePanelSummary, onUpdatePanelTitle, onUpdateCIColors, onUpdateSectionLabels, onRegeneratePanel, onRegeneratePanelSegment, onTogglePanelLock, onReorderPanels, onJobControl, onAddNewPanel, onOpenAddPanelModal, topicSuggestions,
 }) => {
   const [showJson, setShowJson] = useState(false);
   const [exportSelection, setExportSelection] = useState<string>('all');
@@ -193,6 +196,7 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   const { results } = job;
   const { topic, geo, panels: panelResults, section_labels, lintSummary } = results;
   const labels = section_labels || defaultLabels;
+  const isFormValid = validationState.isValid;
   
   useEffect(() => {
     if (!isDesignDirty) {
@@ -310,7 +314,13 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
     return { status: 'OK', errorCount, staleCount, warnCount, okCount, totalCount };
   }, [exportSelection, successfulPanels, getPanelStatus]);
 
-  const isExportAllowed = exportStatus.status === 'OK' || exportStatus.status === 'WARN';
+  const isLinterOk = exportStatus.status === 'OK' || exportStatus.status === 'WARN';
+  const isExportAllowed = isLinterOk && isFormValid;
+  const exportDisabledTitle = !isFormValid 
+    ? t('gate.blocked')
+    : !isLinterOk 
+    ? "Export gesperrt: Bitte Linter-Probleme beheben." 
+    : undefined;
 
   useEffect(() => { if (toast) { const timer = setTimeout(() => setToast(null), 5000); return () => clearTimeout(timer); } }, [toast]);
 
@@ -325,10 +335,10 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   }, [legacyExportProfile, exportSelection, includeContainer, successfulPanels, editableColors, labels, job.userInput.outputFormat]);
 
   const handleCopy = useCallback((content: string | undefined, message: string) => {
-    if (!isExportAllowed) { setToast({ message: 'Export blockiert: Bitte zuerst Linter-Probleme beheben.', type: 'warning' }); return; }
+    if (!isExportAllowed) { setToast({ message: exportDisabledTitle || 'Export zurzeit nicht möglich.', type: 'warning' }); return; }
     if (!content) { setToast({ message: 'Kein Inhalt zum Kopieren verfügbar.', type: 'error' }); return; }
     navigator.clipboard.writeText(content).then(() => { setToast({ message, type: 'success' }); }).catch(err => { console.error('Kopieren fehlgeschlagen: ', err); setToast({ message: 'Kopieren fehlgeschlagen.', type: 'error' }); });
-  }, [isExportAllowed]);
+  }, [isExportAllowed, exportDisabledTitle]);
 
   const handleQuickLinter = useCallback(async () => {
     setIsLinting(true);
@@ -365,6 +375,8 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   }, []);
 
   const handleOnePageExport = useCallback((options: { includeCss: boolean, forWp: boolean }) => {
+    if (!isExportAllowed) { setToast({ message: exportDisabledTitle || 'Export zurzeit nicht möglich.', type: 'warning' }); return; }
+    
     const htmlContent = generateOnePageHtml(job, options);
     
     if(options.forWp) {
@@ -388,7 +400,18 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
     URL.revokeObjectURL(url);
     setToast({ message: 'One-Page HTML wird heruntergeladen.', type: 'success' });
 
-  }, [job, geo]);
+  }, [job, geo, isExportAllowed, exportDisabledTitle]);
+
+    const handleDownloadReport = useCallback(() => {
+    if (!job) return;
+    const report = buildValidationReport(
+        job.userInput,
+        validationState.errorCount,
+        validationState.warnCount
+    );
+    downloadJson('validation-report.json', report);
+    setToast({ message: 'Validierungs-Report wird heruntergeladen.', type: 'success' });
+    }, [job, validationState, setToast]);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     draggedPanelIndex.current = index;
@@ -435,6 +458,9 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   if (!geo || !topic) return null;
 
   const renderExportBanner = () => {
+    if (!isFormValid) {
+        return <div className="p-3 rounded-lg bg-red-900/50 border border-red-700 text-red-200 text-sm"><strong className="font-bold">Export gesperrt.</strong> Bitte beheben Sie die Fehler im Eingabeformular (oben auf der Seite).</div>;
+    }
     switch (exportStatus.status) {
         case 'OK':
             return <div className="flex justify-end items-center"><span className="text-xs font-bold uppercase px-2 py-1 rounded bg-green-500/20 text-green-300">Linter: OK</span></div>;
@@ -668,15 +694,33 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
       <div id="export-section" className="bg-brand-secondary rounded-xl shadow-lg p-6">
         {job.userInput.outputFormat === 'onepage' ? (
           <div>
-            <h3 className="text-xl font-bold mb-4">One-Page Export</h3>
+             <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">One-Page Export</h3>
+                {isFormValid && (
+                    <button
+                        onClick={handleDownloadReport}
+                        className="px-3 py-1 text-xs rounded-md bg-brand-secondary text-brand-text-secondary hover:bg-brand-primary transition-colors flex items-center space-x-2"
+                        aria-label={t('report.download')}
+                        title="Lädt einen JSON-Report mit den Metadaten der aktuellen Konfiguration herunter."
+                    >
+                        <IconDownload className="w-4 h-4"/>
+                        <span>{t('report.download')}</span>
+                    </button>
+                )}
+            </div>
+            {!isFormValid && (
+              <div className="p-3 mb-4 rounded-lg bg-red-900/50 border border-red-700 text-red-200 text-sm">
+                <strong className="font-bold">Export gesperrt.</strong> {t('gate.blocked')}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button onClick={() => handleOnePageExport({ includeCss: true, forWp: false })} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover transition-colors">
+              <button onClick={() => handleOnePageExport({ includeCss: true, forWp: false })} disabled={!isExportAllowed} aria-disabled={!isExportAllowed} title={exportDisabledTitle} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
                   <IconDownload className="w-5 h-5 mr-2" /> HTML (mit CSS)
               </button>
-              <button onClick={() => handleOnePageExport({ includeCss: false, forWp: false })} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-secondary text-brand-text font-bold rounded-lg hover:bg-brand-primary transition-colors">
+              <button onClick={() => handleOnePageExport({ includeCss: false, forWp: false })} disabled={!isExportAllowed} aria-disabled={!isExportAllowed} title={exportDisabledTitle} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-secondary text-brand-text font-bold rounded-lg hover:bg-brand-primary transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
                   <IconDownload className="w-5 h-5 mr-2" /> HTML (ohne CSS)
               </button>
-              <button onClick={() => handleOnePageExport({ includeCss: true, forWp: true })} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-secondary text-brand-text font-bold rounded-lg hover:bg-brand-primary transition-colors">
+              <button onClick={() => handleOnePageExport({ includeCss: true, forWp: true })} disabled={!isExportAllowed} aria-disabled={!isExportAllowed} title={exportDisabledTitle} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-secondary text-brand-text font-bold rounded-lg hover:bg-brand-primary transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
                   <IconCopy className="w-5 h-5 mr-2" /> WP HTML-Block
               </button>
             </div>
@@ -684,7 +728,20 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
           </div>
         ) : (
           <div>
-            <div className="flex justify-between items-center mb-2"> <h3 className="text-xl font-bold">WordPress-Export (Legacy)</h3> </div>
+            <div className="flex justify-between items-center mb-2"> 
+                <h3 className="text-xl font-bold">WordPress-Export (Legacy)</h3>
+                {isFormValid && (
+                    <button
+                        onClick={handleDownloadReport}
+                        className="px-3 py-1 text-xs rounded-md bg-brand-secondary text-brand-text-secondary hover:bg-brand-primary transition-colors flex items-center space-x-2"
+                        aria-label={t('report.download')}
+                        title="Lädt einen JSON-Report mit den Metadaten der aktuellen Konfiguration herunter."
+                    >
+                        <IconDownload className="w-4 h-4"/>
+                        <span>{t('report.download')}</span>
+                    </button>
+                )}
+            </div>
             <p className="text-sm text-brand-text-secondary/80 mb-4">Exportiert einzelne Sektionen für den klassischen Gebrauch.</p>
             {renderExportBanner()}
             <div className="space-y-4 mt-4">
@@ -713,11 +770,11 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
               <div className="pt-2">
                 {legacyExportProfile === 'classic_split' ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button onClick={() => handleCopy(generatedExport?.css, 'CSS-Code kopiert!')} disabled={!isExportAllowed} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover transition-colors disabled:bg-gray-500"> <IconCss className="w-5 h-5 mr-2"/> CSS </button>
-                        <button onClick={() => handleCopy(generatedExport?.html, 'HTML-Code kopiert!')} disabled={!isExportAllowed} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-secondary text-brand-text font-bold rounded-lg hover:bg-brand-primary transition-colors disabled:bg-gray-500"> <IconCopy className="w-5 h-5 mr-2"/> HTML </button>
+                        <button onClick={() => handleCopy(generatedExport?.css, 'CSS-Code kopiert!')} disabled={!isExportAllowed} aria-disabled={!isExportAllowed} title={exportDisabledTitle} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"> <IconCss className="w-5 h-5 mr-2"/> CSS </button>
+                        <button onClick={() => handleCopy(generatedExport?.html, 'HTML-Code kopiert!')} disabled={!isExportAllowed} aria-disabled={!isExportAllowed} title={exportDisabledTitle} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-secondary text-brand-text font-bold rounded-lg hover:bg-brand-primary transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"> <IconCopy className="w-5 h-5 mr-2"/> HTML </button>
                     </div>
                 ) : (
-                    <button onClick={() => handleCopy(generatedExport?.combined || generatedExport?.html, 'Code kopiert!')} disabled={!isExportAllowed} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover transition-colors disabled:bg-gray-500"> <IconCopy className="w-5 h-5 mr-2"/> Code kopieren </button>
+                    <button onClick={() => handleCopy(generatedExport?.combined || generatedExport?.html, 'Code kopiert!')} disabled={!isExportAllowed} aria-disabled={!isExportAllowed} title={exportDisabledTitle} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"> <IconCopy className="w-5 h-5 mr-2"/> Code kopieren </button>
                 )}
               </div>
             </div>

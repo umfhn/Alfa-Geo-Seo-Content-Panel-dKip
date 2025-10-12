@@ -1,0 +1,16 @@
+{
+  "val.required": "The '{field}' field is required.",
+  "val.slugInvalid": "The slug must only contain lowercase letters, numbers, and dashes.",
+  "val.companyNameLength": "The company name must be between 3 and 120 characters long.",
+  "val.topicsMax": "The number of topics cannot exceed the selected number of sections ({count}).",
+  "val.contentRequired": "A description, URL, or JSON is required.",
+  "sum.heading.one": "1 error – please review",
+  "sum.heading.other": "{count} errors – please review",
+  "sum.pleaseCorrect": "Please correct the highlighted fields to continue.",
+  "sum.firstBtn": "Jump to first error",
+  "gate.blocked": "Export blocked: Please fix errors in the input form.",
+  "gate.fixErrors": "Please fix errors",
+  "report.download": "Download Report",
+  "form.startGeneration": "Start Generation",
+  "form.jobRunning": "Job running..."
+}
