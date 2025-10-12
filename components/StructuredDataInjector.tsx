@@ -1,5 +1,5 @@
+
 // components/StructuredDataInjector.tsx
-// FIX: Add React and useEffect import for the component and hook.
 import React, { useEffect } from 'react';
 
 interface StructuredDataInjectorProps {
@@ -19,7 +19,6 @@ const manageScriptTag = (id: string, content: string | null) => {
   const existingScript = document.getElementById(id);
 
   if (content) {
-    // FIX: Cast the element to HTMLScriptElement to access script-specific properties like 'type'.
     const script = (existingScript || document.createElement('script')) as HTMLScriptElement;
     script.id = id;
     script.type = 'application/ld+json';
