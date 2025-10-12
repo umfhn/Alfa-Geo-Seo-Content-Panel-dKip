@@ -6,6 +6,13 @@
   "val.contentRequired": "A description, URL, or JSON is required.",
   "sum.heading.one": "1 error – please review",
   "sum.heading.other": "{count} errors – please review",
+  "sum.headingWithWarnings.oneError.oneWarning": "1 error · 1 warning",
+  "sum.headingWithWarnings.oneError.otherWarnings": "1 error · {warnCount} warnings",
+  "sum.headingWithWarnings.otherErrors.oneWarning": "{errorCount} errors · 1 warning",
+  "sum.headingWithWarnings.otherErrors.otherWarnings": "{errorCount} errors · {warnCount} warnings",
+  "sum.headingWarningsOnly.one": "1 warning – please review",
+  "sum.headingWarningsOnly.other": "{count} warnings – please review",
+  "sum.warningsIntro": "The following warnings do not block the export but should be addressed for better quality:",
   "sum.pleaseCorrect": "Please correct the highlighted fields to continue.",
   "sum.firstBtn": "Jump to first error",
   "gate.blocked": "Export blocked: Please fix errors in the input form.",
@@ -20,5 +27,9 @@
   "lbl.text.cta": "CTA sentence (optional)",
   "val.len.min": "Too short (min. {n} characters).",
   "val.len.max": "Too long (max. {n} characters).",
-  "val.array.minmax": "Requires {min}–{max} entries."
+  "val.array.minmax": "Requires {min}–{max} entries.",
+  "warn.noLinksInShort": "Avoid links in short texts (Top-Answer/Synopsis).",
+  "warn.boosterWords": "Booster/filler words detected. Prefer precise wording.",
+  "warn.duplicateKeyFact": "Duplicate key fact. Please review.",
+  "warn.ctaInBody": "CTA phrase found in body. Move to CTA field."
 }

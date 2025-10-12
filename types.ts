@@ -48,7 +48,15 @@ export type I18nKey =
   | 'val.companyNameLength'
   | 'val.topicsMax'
   | 'val.contentRequired'
-  | 'sum.heading'
+  | 'sum.heading.one'
+  | 'sum.heading.other'
+  | 'sum.headingWithWarnings.oneError.oneWarning'
+  | 'sum.headingWithWarnings.oneError.otherWarnings'
+  | 'sum.headingWithWarnings.otherErrors.oneWarning'
+  | 'sum.headingWithWarnings.otherErrors.otherWarnings'
+  | 'sum.headingWarningsOnly.one'
+  | 'sum.headingWarningsOnly.other'
+  | 'sum.warningsIntro'
   | 'sum.pleaseCorrect'
   | 'sum.firstBtn'
   | 'gate.blocked'
@@ -63,11 +71,23 @@ export type I18nKey =
   | 'lbl.text.cta'
   | 'val.len.min'
   | 'val.len.max'
-  | 'val.array.minmax';
+  | 'val.array.minmax'
+  | 'warn.noLinksInShort'
+  | 'warn.boosterWords'
+  | 'warn.duplicateKeyFact'
+  | 'warn.ctaInBody';
+
 
 export interface ValidationError {
   path: string;
   message: I18nKey;
+  params?: { [key: string]: string | number };
+}
+
+export interface Warning {
+  path: string;
+  code: string;
+  messageKey: I18nKey;
   params?: { [key: string]: string | number };
 }
 

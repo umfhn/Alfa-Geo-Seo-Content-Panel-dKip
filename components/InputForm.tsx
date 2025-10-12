@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import type { UserInput, Geo, JobMedia, GalleryMediaItem } from '../types';
+import type { UserInput, Geo, JobMedia, GalleryMediaItem, Warning } from '../types';
 import { InputType, Tone, PanelCount, ContentDepth } from '../types';
 import { IconGenerate, IconSparkles, IconPlusCircle, IconTrash } from './Icons';
 import { useValidation } from '../hooks/useValidation';
@@ -44,7 +44,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
     panelCount,
   }), [content, geo, topics, panelCount]);
 
-  const { errors, errorsByPath, validateNow, isValid, errorCount, warnCount, firstErrorId } = useValidation(formStateForValidation);
+  const { errors, warnings, errorsByPath, validateNow, isValid, errorCount, warnCount, firstErrorId } = useValidation(formStateForValidation);
 
   useEffect(() => {
     if (onValidationChange) {
@@ -210,7 +210,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" noValidate>
-       <ErrorSummary errors={errors} firstErrorId={firstErrorId} />
+       <ErrorSummary errors={errors} warnings={warnings} firstErrorId={firstErrorId} />
        <div className="text-center -mt-2 mb-6">
           <button 
             type="button" 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-// FIX: Import types and values correctly from their respective sources.
 import { validateForm, type FormState } from '../services/validationService';
-import type { ValidationError } from '../types';
+import { lintGeoText } from '../services/textLint';
+import type { ValidationError, Warning } from '../types';
 import { toId } from '../services/fieldPath';
 
 /**
@@ -11,6 +11,7 @@ import { toId } from '../services/fieldPath';
  */
 export const useValidation = (formState: FormState) => {
   const [errors, setErrors] = useState<ValidationError[]>([]);
+  const [warnings, setWarnings] = useState<Warning[]>([]);
 
   // Memoize errors mapped by path for quick lookup in the component.
   const errorsByPath = useMemo(() => {
@@ -22,7 +23,7 @@ export const useValidation = (formState: FormState) => {
 
   const isValid = useMemo(() => errors.length === 0, [errors]);
   const errorCount = errors.length;
-  const warnCount = 0; // Per ticket P0c, warnings are 0 for v0.3
+  const warnCount = warnings.length;
   const firstErrorPath = useMemo(() => errors[0]?.path || null, [errors]);
   const firstErrorId = useMemo(() => firstErrorPath ? toId(firstErrorPath) : null, [firstErrorPath]);
   
@@ -33,8 +34,10 @@ export const useValidation = (formState: FormState) => {
       const isDirty = formState.content || formState.geo.companyName || formState.geo.city || formState.geo.slug || formState.topics;
       if (isDirty) {
         setErrors(validateForm(formState));
+        setWarnings(lintGeoText(formState));
       } else {
         setErrors([]);
+        setWarnings([]);
       }
     }, 300); // Debounce time as specified in the ticket.
 
@@ -46,9 +49,11 @@ export const useValidation = (formState: FormState) => {
   // Function to trigger validation immediately, used for form submission.
   const validateNow = useCallback(() => {
     const currentErrors = validateForm(formState);
+    const currentWarnings = lintGeoText(formState);
     setErrors(currentErrors);
+    setWarnings(currentWarnings);
     return currentErrors;
   }, [formState]);
   
-  return { errors, errorsByPath, validateNow, isValid, errorCount, warnCount, firstErrorPath, firstErrorId };
+  return { errors, warnings, errorsByPath, validateNow, isValid, errorCount, warnCount, firstErrorPath, firstErrorId };
 };

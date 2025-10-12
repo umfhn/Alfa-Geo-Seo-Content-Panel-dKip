@@ -6,6 +6,13 @@
   "val.contentRequired": "Eine Beschreibung, URL oder JSON ist erforderlich.",
   "sum.heading.one": "1 Fehler – bitte prüfen",
   "sum.heading.other": "{count} Fehler – bitte prüfen",
+  "sum.headingWithWarnings.oneError.oneWarning": "1 Fehler · 1 Hinweis",
+  "sum.headingWithWarnings.oneError.otherWarnings": "1 Fehler · {warnCount} Hinweise",
+  "sum.headingWithWarnings.otherErrors.oneWarning": "{errorCount} Fehler · 1 Hinweis",
+  "sum.headingWithWarnings.otherErrors.otherWarnings": "{errorCount} Fehler · {warnCount} Hinweise",
+  "sum.headingWarningsOnly.one": "1 Hinweis – bitte prüfen",
+  "sum.headingWarningsOnly.other": "{count} Hinweise – bitte prüfen",
+  "sum.warningsIntro": "Die folgenden Hinweise blockieren den Export nicht, sollten aber für eine bessere Qualität beachtet werden:",
   "sum.pleaseCorrect": "Bitte korrigieren Sie die markierten Felder, um fortzufahren.",
   "sum.firstBtn": "Zur ersten Fehlerstelle springen",
   "gate.blocked": "Export gesperrt: Bitte Fehler im Eingabeformular beheben.",
@@ -20,5 +27,9 @@
   "lbl.text.cta": "CTA-Satz (optional)",
   "val.len.min": "Zu kurz (min. {n} Zeichen).",
   "val.len.max": "Zu lang (max. {n} Zeichen).",
-  "val.array.minmax": "Erlaubt sind {min}–{max} Einträge."
+  "val.array.minmax": "Erlaubt sind {min}–{max} Einträge.",
+  "warn.noLinksInShort": "Bitte Kurztexte ohne Links formulieren (Top-Answer/Synopsis).",
+  "warn.boosterWords": "Booster-/Füllwörter gefunden. Präziser formulieren.",
+  "warn.duplicateKeyFact": "Key-Fact doppelt. Eintrag bitte prüfen/kürzen.",
+  "warn.ctaInBody": "CTA-Phrase im Haupttext erkannt. In CTA-Feld verlagern."
 }
