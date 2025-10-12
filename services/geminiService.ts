@@ -205,7 +205,19 @@ export const generateSeoMetadataFromContent = async (
 
     } catch (error) {
         console.error("Gemini API call for SEO metadata failed:", error);
-        // Throw the error so the calling function can handle it (e.g., fall back to a template)
-        throw new Error("Fehler bei der Generierung der SEO-Metadaten.");
+        let errorMessage = "Fehler bei der Generierung der SEO-Metadaten.";
+        if (error instanceof Error) {
+            if (error.message.includes('SAFETY')) {
+                errorMessage = "SEO-Generierung blockiert: Der Inhalt wurde aufgrund von Sicherheitsrichtlinien blockiert.";
+            } else if (error.message.includes('429')) {
+                errorMessage = "Rate-Limit für SEO-Generierung erreicht. Bitte warten Sie einen Moment.";
+            } else if (error.message.toLowerCase().includes('json')) {
+                 errorMessage = "Formatfehler (SEO): Die KI hat ein ungültiges JSON-Format zurückgegeben.";
+            } else {
+                errorMessage = `KI-Fehler (SEO): ${error.message}`;
+            }
+        }
+        // Throw the specific error message
+        throw new Error(errorMessage);
     }
 };

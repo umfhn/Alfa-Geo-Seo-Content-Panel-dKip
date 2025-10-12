@@ -6,7 +6,7 @@ import { PanelPlaceholder } from './PanelPlaceholder';
 import { ExplainabilityCard } from './ExplainabilityCard';
 import { ErrorSummary } from './ErrorSummary';
 import { StructuredDataPreview } from './StructuredDataPreview';
-import { IconJson, IconCopy, IconDownload, IconInfo, IconCss, IconEdit, IconShieldCheck, IconMonitor, IconTablet, IconPhone, IconArrowUp, IconArrowDown, IconPlusCircle, IconTrash } from './Icons';
+import { IconJson, IconCopy, IconDownload, IconInfo, IconCss, IconEdit, IconShieldCheck, IconMonitor, IconTablet, IconPhone, IconArrowUp, IconArrowDown, IconPlusCircle, IconTrash, IconGenerate } from './Icons';
 import { generateExportBundle, ExportBundle, generateSeoData, generateOnePageHtml } from '../services/exportService';
 import { defaultCIColors, designPresets, getContrastRatio, getWcagRating } from '../services/exportService';
 import { buildValidationReport, downloadJson } from '../services/reportService';
@@ -122,10 +122,12 @@ const DesignPresetModal: React.FC<{
 interface SixpackRendererProps {
   job: Job;
   validationState: { isValid: boolean; errorCount: number; warnCount: number; warnings: Warning[] };
+  onClearJob: () => void;
   onUpdatePanelSummary: (panelIndex: number, newSummary: string) => void;
   onUpdatePanelTitle: (panelIndex: number, newTitle: string) => void;
   onUpdateCIColors: (newColors: CIColors) => void;
   onUpdateSectionLabels: (newName: SectionLabels) => void;
+  onUpdateSeoMeta: (meta: SeoData) => void;
   onRegeneratePanel: (panelIndex: number) => void;
   onRegeneratePanelSegment: (panelIndex: number, segment: string) => void;
   onTogglePanelLock: (panelIndex: number) => void;
@@ -174,7 +176,7 @@ const NumberInput: React.FC<{ label: string; value: number; onChange: (e: React.
 );
 
 export const SixpackRenderer: React.FC<SixpackRendererProps> = ({ 
-    job, validationState, onUpdatePanelSummary, onUpdatePanelTitle, onUpdateCIColors, onUpdateSectionLabels, onRegeneratePanel, onRegeneratePanelSegment, onTogglePanelLock, onReorderPanels, onJobControl, onAddNewPanel, onOpenAddPanelModal, topicSuggestions,
+    job, validationState, onClearJob, onUpdatePanelSummary, onUpdatePanelTitle, onUpdateCIColors, onUpdateSectionLabels, onUpdateSeoMeta, onRegeneratePanel, onRegeneratePanelSegment, onTogglePanelLock, onReorderPanels, onJobControl, onAddNewPanel, onOpenAddPanelModal, topicSuggestions,
 }) => {
   const [showJson, setShowJson] = useState(false);
   const [exportSelection, setExportSelection] = useState<string>('all');
@@ -191,8 +193,8 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   const [isLinting, setIsLinting] = useState(false);
   
   const [viewport, setViewport] = useState<Viewport>('desktop');
-  const [seoData, setSeoData] = useState<SeoData | null>(null);
   const [isSeoLoading, setIsSeoLoading] = useState(false);
+  const seoRequestSentForJobId = useRef<string | null>(null);
   
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const draggedPanelIndex = useRef<number | null>(null);
@@ -229,23 +231,27 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   useEffect(() => { setEditableLabels(section_labels); }, [section_labels]);
 
   useEffect(() => {
-    if (job.state === 'done' && !seoData && !isSeoLoading) {
+    // Fetch SEO data only if the job is done, we don't already have a title, 
+    // and we haven't already sent a request for this specific job ID.
+    if (job.state === 'done' && !job.results.meta?.title && seoRequestSentForJobId.current !== job.jobId) {
+        seoRequestSentForJobId.current = job.jobId; // Immediately mark that we've sent the request for this job.
+        
         const fetchSeoData = async () => {
             setIsSeoLoading(true);
             try {
-                // Pass the whole job object to generateSeoData
                 const generatedSeo = await generateSeoData(job);
-                job.results.meta = { ...job.results.meta, title: generatedSeo.title, description: generatedSeo.description };
-                setSeoData(generatedSeo);
+                onUpdateSeoMeta(generatedSeo);
             } catch (error) {
                 console.error("Failed to fetch SEO data:", error);
+                const errorMessage = error instanceof Error ? error.message : 'SEO-Daten konnten nicht generiert werden.';
+                setToast({ message: errorMessage, type: 'error' });
             } finally {
                 setIsSeoLoading(false);
             }
         };
         fetchSeoData();
     }
-  }, [job, seoData, isSeoLoading]);
+  }, [job, onUpdateSeoMeta]);
 
   const sectionIds = useMemo(() => [
     'design-section',
@@ -391,8 +397,9 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   const handleGenerateNewPanel = (topic: string) => { onAddNewPanel(topic); setIsAddPanelModalOpen(false); };
   const handleOpenModal = () => { onOpenAddPanelModal(); setIsAddPanelModalOpen(true); };
   const handleSeoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (!seoData) return;
-    setSeoData({ ...seoData, [e.target.name]: e.target.value });
+    if (!job.results.meta) return;
+    const newMeta = { ...job.results.meta, [e.target.name]: e.target.value };
+    onUpdateSeoMeta(newMeta as SeoData);
   };
     const handleDownloadSinglePanel = useCallback((panelIndex: number) => {
     // This function becomes less relevant in one-page mode, but we keep it for individual panel inspection.
@@ -576,9 +583,18 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
     <style>{dynamicTitleStyles}</style>
     <style>{dndStyles}</style>
     <div className="max-w-7xl mx-auto space-y-8">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-brand-text">Inhalt für: {topic}</h2>
-        <p className="text-brand-text-secondary">{geo.branch && `${geo.branch} | `}{geo.street && `${geo.street}, `}{geo.zip} {geo.city} {geo.region && `(${geo.region})`}</p>
+      <div className="bg-brand-secondary rounded-xl shadow-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="text-center sm:text-left">
+            <h2 className="text-2xl sm:text-3xl font-bold text-brand-text">Ergebnis für: {topic}</h2>
+            <p className="text-sm text-brand-text-secondary">{geo.branch && `${geo.branch} | `}{geo.street && `${geo.street}, `}{geo.zip} {geo.city} {geo.region && `(${geo.region})`}</p>
+        </div>
+        <button 
+            onClick={onClearJob}
+            className="w-full sm:w-auto flex-shrink-0 inline-flex items-center justify-center px-6 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover transition-colors duration-300 shadow-lg transform hover:scale-105"
+        >
+            <IconGenerate className="w-5 h-5 mr-2" />
+            {t('actions.newGeneration')}
+        </button>
       </div>
       
       <ErrorSummary errors={jsonLdErrors} warnings={[]} firstErrorId={null} />
@@ -628,21 +644,21 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
                       <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-brand-accent mx-auto mb-2"></div>
                       <p>Generiere SEO-Metadaten mit KI...</p>
                   </div>
-              ) : seoData ? (
+              ) : job.results.meta?.title ? (
                 <div className="mt-6 space-y-6">
                     <div>
                         <label htmlFor="seo-title" className="flex justify-between items-center text-sm font-medium text-brand-text-secondary mb-1">
                             <span>SEO Title (max. 60 Zeichen)</span>
-                            <span className={`font-mono text-xs ${seoData.title.length > 60 ? 'text-red-400' : ''}`}>{seoData.title.length}/60</span>
+                            <span className={`font-mono text-xs ${job.results.meta.title.length > 60 ? 'text-red-400' : ''}`}>{job.results.meta.title.length}/60</span>
                         </label>
-                        <input id="seo-title" type="text" name="title" value={seoData.title} onChange={handleSeoChange} maxLength={60} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+                        <input id="seo-title" type="text" name="title" value={job.results.meta.title} onChange={handleSeoChange} maxLength={60} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
                     </div>
                      <div>
                         <label htmlFor="seo-description" className="flex justify-between items-center text-sm font-medium text-brand-text-secondary mb-1">
                             <span>Meta Description (max. 155 Zeichen)</span>
-                             <span className={`font-mono text-xs ${seoData.description.length > 155 ? 'text-red-400' : ''}`}>{seoData.description.length}/155</span>
+                             <span className={`font-mono text-xs ${job.results.meta.description.length > 155 ? 'text-red-400' : ''}`}>{job.results.meta.description.length}/155</span>
                         </label>
-                        <textarea id="seo-description" name="description" value={seoData.description} onChange={handleSeoChange} maxLength={155} rows={3} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+                        <textarea id="seo-description" name="description" value={job.results.meta.description} onChange={handleSeoChange} maxLength={155} rows={3} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
                     </div>
                      <StructuredDataPreview faqJson={isJsonLdValid ? faqJsonLd : null} howToJson={isJsonLdValid ? howToJsonLd : null} />
                 </div>

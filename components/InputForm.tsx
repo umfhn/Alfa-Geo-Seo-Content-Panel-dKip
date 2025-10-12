@@ -51,8 +51,9 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
     const restoredData = restore();
     if (restoredData) {
         setFormState(restoredData);
+        discard(); // Clear draft after successful restore
     }
-  }, [restore]);
+  }, [restore, discard]);
   
   // --- Validation Hook ---
   const formStateForValidation = useMemo<FormState>(() => ({
@@ -410,6 +411,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
                                 <input type="url" name="thumb" value={item.thumb} onChange={(e) => handleGalleryChange(item.id, e)} placeholder={`Vorschau-URL ${index + 1}`} className="bg-brand-secondary border border-brand-accent/50 rounded-md p-2 text-sm focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
                                 <input type="url" name="full" value={item.full} onChange={(e) => handleGalleryChange(item.id, e)} placeholder={`Vollbild-URL ${index + 1}`} className="bg-brand-secondary border border-brand-accent/50 rounded-md p-2 text-sm focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
                                 <input type="text" name="alt" value={item.alt} onChange={(e) => handleGalleryChange(item.id, e)} placeholder={`Alt-Text ${index + 1}`} className="bg-brand-secondary border border-brand-accent/50 rounded-md p-2 text-sm sm:col-span-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+                                <input type="text" name="caption" value={item.caption} onChange={(e) => handleGalleryChange(item.id, e)} placeholder={`Bildunterschrift ${index + 1}`} className="bg-brand-secondary border border-brand-accent/50 rounded-md p-2 text-sm sm:col-span-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
                                 <button type="button" onClick={() => removeGalleryItem(item.id)} className="absolute -top-2 -right-2 p-1 bg-red-600 rounded-full text-white hover:bg-red-700" aria-label="Galerie-Eintrag entfernen"><IconTrash className="w-4 h-4" /></button>
                              </div>
                         ))}

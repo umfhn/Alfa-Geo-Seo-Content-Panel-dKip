@@ -9,7 +9,7 @@ import { SystemCheckPanel } from './components/SystemCheckPanel';
 import { LayoutModule } from './components/LayoutModule';
 import { startJob, getJobStatus, controlJob, getTopicSuggestions, initJobFromStorage, clearPersistedJob } from './services/jobService';
 import { clearDraft } from './services/persistence';
-import type { UserInput, Job, Warning } from './types';
+import type { UserInput, Job, Warning, SeoData } from './types';
 import { FLAGS } from './flags';
 import { initI18n } from './i18n';
 
@@ -93,6 +93,15 @@ const App: React.FC = () => {
       });
   };
 
+  const handleUpdateSeoMeta = (jobId: string, meta: SeoData) => {
+      setJob(prevJob => {
+          if (!prevJob || prevJob.jobId !== jobId) return prevJob;
+          // Preserve existing meta fields like jsonLd while updating title and description
+          const newMeta = { ...(prevJob.results.meta || {}), ...meta };
+          return { ...prevJob, results: { ...prevJob.results, meta: newMeta as SeoData }};
+      });
+  };
+
   useEffect(() => {
     const pollJobStatus = async () => {
       if (job && (job.state === 'running' || job.state === 'queued')) {
@@ -157,10 +166,12 @@ const App: React.FC = () => {
                <SixpackRenderer 
                   job={job}
                   validationState={validationState}
+                  onClearJob={handleClearJob}
                   onUpdatePanelSummary={(panelIndex, newSummary) => handleUpdatePanelProperty(job.jobId, panelIndex, 'summary', newSummary)}
                   onUpdatePanelTitle={(panelIndex, newTitle) => handleUpdatePanelProperty(job.jobId, panelIndex, 'title', newTitle)}
                   onUpdateCIColors={(newColors) => setJob(j => j ? ({ ...j, results: { ...j.results, ci_colors: newColors }}) : null)}
                   onUpdateSectionLabels={(newLabels) => setJob(j => j ? ({...j, results: {...j.results, section_labels: newLabels}}) : null)}
+                  onUpdateSeoMeta={(meta) => handleUpdateSeoMeta(job.jobId, meta)}
                   onRegeneratePanel={handleRegeneratePanel}
                   onRegeneratePanelSegment={handleRegeneratePanelSegment}
                   onTogglePanelLock={(panelIndex) => setJob(j => {

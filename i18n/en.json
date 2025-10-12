@@ -4,6 +4,7 @@
   "form.jobRunning": "Generation in progress...",
   "gate.fixErrors": "Fix errors to start",
   "form.startGeneration": "Start Generation",
+  "actions.newGeneration": "Start New Generation",
   "val.content.minLength": "Please enter at least {min} characters to enable a high-quality analysis.",
   "val.required": "This field is required.",
   "val.topics.tooMany": "You have specified {count} topics, but only selected {max} sections.",
@@ -36,12 +37,5 @@
   "jsonld.tooLarge": "Warning: The size of the {type} schema exceeds 100KB and might impact page load time.",
   "labels.export.dkipCli": "dKip-CLI JSON",
   "labels.export.acf": "ACF JSON",
-  "hints.export.mappingV1": "Mapping v1 – Foundation for Import/ACF",
-  "autosave.found": "Saved draft found.",
-  "autosave.restore": "Restore",
-  "autosave.discard": "Discard",
-  "autosave.savedAt": "Automatically saved: {time}",
-  "autosave.tooLarge": "Draft is too large (> 1MB) and cannot be saved automatically.",
-  "autosave.incompatible": "Draft from an incompatible version found. Restore at your own risk.",
-  "autosave.incompatible.restoreAnyway": "Restore anyway"
+  "hints.export.mappingV1": "Mapping v1 – Foundation for Import/ACF"
 }

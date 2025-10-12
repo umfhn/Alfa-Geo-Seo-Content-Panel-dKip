@@ -4,6 +4,7 @@
   "form.jobRunning": "Generierung läuft...",
   "gate.fixErrors": "Fehler beheben zum Starten",
   "form.startGeneration": "Generierung starten",
+  "actions.newGeneration": "Neue Generierung starten",
   "val.content.minLength": "Bitte geben Sie mindestens {min} Zeichen ein, um eine qualitativ hochwertige Analyse zu ermöglichen.",
   "val.required": "Dieses Feld ist erforderlich.",
   "val.topics.tooMany": "Sie haben {count} Themen angegeben, aber nur {max} Sektionen ausgewählt.",
@@ -36,12 +37,5 @@
   "jsonld.tooLarge": "Warnung: Die Größe des {type}-Schemas überschreitet 100KB und könnte die Seitenladezeit beeinflussen.",
   "labels.export.dkipCli": "dKip-CLI JSON",
   "labels.export.acf": "ACF JSON",
-  "hints.export.mappingV1": "Mapping v1 – Grundlage für Import/ACF",
-  "autosave.found": "Gespeicherter Entwurf gefunden.",
-  "autosave.restore": "Wiederherstellen",
-  "autosave.discard": "Verwerfen",
-  "autosave.savedAt": "Automatisch gespeichert: {time}",
-  "autosave.tooLarge": "Der Entwurf ist zu groß (> 1MB) und kann nicht automatisch gespeichert werden.",
-  "autosave.incompatible": "Entwurf aus inkompatibler Version gefunden. Wiederherstellen auf eigene Gefahr.",
-  "autosave.incompatible.restoreAnyway": "Trotzdem versuchen"
+  "hints.export.mappingV1": "Mapping v1 – Grundlage für Import/ACF"
 }

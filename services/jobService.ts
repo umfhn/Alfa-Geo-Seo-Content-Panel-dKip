@@ -112,6 +112,11 @@ const runJob = async (jobId: string) => {
                 // as the state is managed by the controlJob function.
                 return;
             }
+
+            // FIX: Skip panels that have already been successfully generated to allow for resume functionality.
+            if (job.results.panels[i].status === 'ok') {
+                continue;
+            }
             
             const panelProgressStart = 15 + (i / panelCount) * 80;
             updateStep({ kind: 'panel', index: i, of: panelCount, description: `Generiere Sektion ${i + 1} von ${panelCount}...` }, panelProgressStart);
@@ -250,7 +255,8 @@ export const controlJob = async (jobId: string, action: 'resume' | 'pause' | 'ne
     if (!job) throw new Error('Job not found');
     switch(action) {
         case 'pause': if (job.state === 'running') job.state = 'paused'; break;
-        case 'resume': if (job.state === 'paused') { job.state = 'running'; /* Orchestrator needs to handle resume logic */ } break;
+        // FIX: Re-trigger the job orchestrator when resuming a paused job.
+        case 'resume': if (job.state === 'paused') { job.state = 'running'; runJob(jobId); } break;
         case 'cancel': job.state = 'error'; job.lastError = { code: 'CANCELLED', message: 'Job vom Benutzer abgebrochen.', atStep: job.step.kind }; break;
         case 'run_linter':
              job.results.panels.forEach(p => { if (p.panel) { p.linting_results = createDummyLintingResults(p.panel); } });

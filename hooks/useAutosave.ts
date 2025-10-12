@@ -1,5 +1,5 @@
 // hooks/useAutosave.ts
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { saveDraft, loadDraft, clearDraft } from '../services/persistence';
 import type { FormDraftData, FormDraft } from '../types';
 
@@ -16,12 +16,20 @@ const debounce = (fn: Function, ms = 800) => {
 export const useAutosave = (formState: FormDraftData, slug: string) => {
     const [status, setStatus] = useState<DraftStatus>('idle');
     const [draft, setDraft] = useState<FormDraft | null>(null);
+    const lastSavedStateRef = useRef<string | null>(null);
 
     const debouncedSave = useCallback(debounce((data: FormDraftData, currentSlug: string) => {
+        const jsonState = JSON.stringify(data);
+        // Only save if the state has actually changed from the last known saved state
+        if (lastSavedStateRef.current === jsonState) {
+            return;
+        }
+
         setStatus('saving');
         const saveResult = saveDraft(currentSlug, data);
         if (saveResult.status === 'saved') {
             setStatus('saved');
+            lastSavedStateRef.current = jsonState; // Update ref on successful save
         } else if (saveResult.status === 'too_large') {
             setStatus('too_large');
         } else {
@@ -43,15 +51,23 @@ export const useAutosave = (formState: FormDraftData, slug: string) => {
             if (loadStatus === 'valid' || loadStatus === 'incompatible') {
                 setDraft(loadedDraft);
                 setStatus(loadStatus);
+                if (loadedDraft) {
+                    // Initialize the ref with the loaded draft's content to prevent immediate re-save
+                    lastSavedStateRef.current = JSON.stringify(loadedDraft.formData);
+                }
             } else {
                 setDraft(null);
                 setStatus('idle');
+                lastSavedStateRef.current = null;
             }
         }
     }, [slug]);
 
     const restore = useCallback((): FormDraftData | null => {
         if (draft) {
+            // After restoring, we don't clear the draft here.
+            // The component using the hook should call discard().
+            // This gives more control to the component.
             setStatus('idle');
             return draft.formData;
         }
@@ -63,6 +79,7 @@ export const useAutosave = (formState: FormDraftData, slug: string) => {
             clearDraft(slug);
             setDraft(null);
             setStatus('idle');
+            lastSavedStateRef.current = null;
         }
     }, [slug]);
     

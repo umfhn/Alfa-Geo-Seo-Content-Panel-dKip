@@ -279,6 +279,7 @@ export async function generateSeoData(job: Job): Promise<SeoData> {
         }
     } catch (error) {
         console.warn("AI SEO generation failed, falling back to template.", error);
+        throw error; // Re-throw the error so the UI layer can handle it (e.g., show a toast)
     }
     
     // Aggregated JSON-LD will be built in the one-page generator

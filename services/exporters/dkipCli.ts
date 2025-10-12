@@ -13,7 +13,7 @@ const slugify = (str: string) => {
  * @returns A DkipCliJson object.
  */
 export const buildDkipCliJson = (job: Job): DkipCliJson => {
-    const { userInput, results } = job;
+    const { results } = job;
     const { geo, ci_colors, media, panels: panelResults, meta } = results;
 
     const page = {
@@ -60,7 +60,7 @@ export const buildDkipCliJson = (job: Job): DkipCliJson => {
     panelResults.forEach(panelResult => {
         if (panelResult.status === 'ok' && panelResult.panel) {
             const panel = panelResult.panel;
-            const baseId = panel.slug || slugify(panel.title);
+            const baseId = panel.slug || slugify(panel.title) || `panel-${panelResult.index}`;
 
             // Add Accordion section if it has content
             if (panel.sections && panel.sections.length > 0) {
@@ -91,12 +91,14 @@ export const buildDkipCliJson = (job: Job): DkipCliJson => {
     // 3. Add Media sections from gallery input
     if (media.gallery && media.gallery.length > 0) {
         media.gallery.forEach((item, index) => {
-            sections.push({
-                id: `media-${index + 1}`,
-                type: 'Media',
-                url: item.full.trim(),
-                alt: item.alt.trim(),
-            });
+            if (item.full && item.alt) {
+                sections.push({
+                    id: `media-${item.id || index + 1}`,
+                    type: 'Media',
+                    url: item.full.trim(),
+                    alt: item.alt.trim(),
+                });
+            }
         });
     }
 
