@@ -13,7 +13,7 @@ import { t } from '../i18n';
 interface InputFormProps {
   onGenerate: (input: UserInput) => void;
   isLoading: boolean;
-  onValidationChange?: (validationState: { isValid: boolean; errorCount: number; warnCount: number }) => void;
+  onValidationChange?: (validationState: { isValid: boolean; errorCount: number; warnCount: number; warnings: Warning[] }) => void;
 }
 
 const initialMediaState: JobMedia = {
@@ -48,9 +48,9 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
 
   useEffect(() => {
     if (onValidationChange) {
-      onValidationChange({ isValid, errorCount, warnCount });
+      onValidationChange({ isValid, errorCount, warnCount, warnings });
     }
-  }, [isValid, errorCount, warnCount, onValidationChange]);
+  }, [isValid, errorCount, warnCount, warnings, onValidationChange]);
 
 
   const handleSubmit = useCallback((e: React.FormEvent) => {

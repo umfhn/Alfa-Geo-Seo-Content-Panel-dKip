@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import type { Job, CIColors, Panel, SectionLabels, ExportProfile, PanelResult, LintIssue, SeoData } from '../types';
+import type { Job, CIColors, Panel, SectionLabels, ExportProfile, PanelResult, LintIssue, SeoData, Warning } from '../types';
 import AccordionPanel from './AccordionPanel';
 import { AddPanelModal } from './AddPanelModal';
 import { PanelPlaceholder } from './PanelPlaceholder';
@@ -115,7 +115,7 @@ const DesignPresetModal: React.FC<{
 
 interface SixpackRendererProps {
   job: Job;
-  validationState: { isValid: boolean; errorCount: number; warnCount: number };
+  validationState: { isValid: boolean; errorCount: number; warnCount: number; warnings: Warning[] };
   onUpdatePanelSummary: (panelIndex: number, newSummary: string) => void;
   onUpdatePanelTitle: (panelIndex: number, newTitle: string) => void;
   onUpdateCIColors: (newColors: CIColors) => void;
@@ -407,7 +407,7 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
     const report = buildValidationReport(
         job.userInput,
         validationState.errorCount,
-        validationState.warnCount
+        validationState.warnings
     );
     downloadJson('validation-report.json', report);
     setToast({ message: 'Validierungs-Report wird heruntergeladen.', type: 'success' });

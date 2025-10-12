@@ -288,6 +288,7 @@ export interface Job {
   timestamps: {
     created: string;
     updated: string;
+
   };
 }
 
@@ -445,4 +446,5 @@ export interface ValidationReport {
     article?: boolean; 
     localBusiness?: boolean 
   };
+  warnings?: Array<{ path: string; code: string; }>;
 }

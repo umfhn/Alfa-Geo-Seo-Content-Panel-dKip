@@ -6,7 +6,7 @@ import { JobStatus } from './components/JobStatus';
 import { SettingsModal } from './components/SettingsModal';
 import { SystemCheckPanel } from './components/SystemCheckPanel';
 import { startJob, getJobStatus, controlJob, getTopicSuggestions, initJobFromStorage, clearPersistedJob } from './services/jobService';
-import type { UserInput, Job, Sixpack, CIColors, SectionLabels, PanelSegmentsLockState, PanelResult, Geo } from './types';
+import type { UserInput, Job, Sixpack, CIColors, SectionLabels, PanelSegmentsLockState, PanelResult, Geo, Warning } from './types';
 import { FLAGS } from './flags';
 import { initI18n, setLocale, t } from './i18n';
 
@@ -74,7 +74,7 @@ const App: React.FC = () => {
   const [isAutoRun, setIsAutoRun] = useState<boolean>(true);
   const [topicSuggestions, setTopicSuggestions] = useState<string[]>([]);
   const [showMigrationBanner, setShowMigrationBanner] = useState<boolean>(!localStorage.getItem(MIGRATION_BANNER_KEY));
-  const [validationState, setValidationState] = useState({ isValid: true, errorCount: 0, warnCount: 0 });
+  const [validationState, setValidationState] = useState<{ isValid: boolean; errorCount: number; warnCount: number; warnings: Warning[] }>({ isValid: true, errorCount: 0, warnCount: 0, warnings: [] });
   
   // Initialize i18n and set locale based on browser language on initial load
   useEffect(() => {

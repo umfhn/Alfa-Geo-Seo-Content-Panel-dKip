@@ -1,4 +1,4 @@
-import type { UserInput, ValidationReport } from '../types';
+import type { UserInput, ValidationReport, Warning } from '../types';
 
 const SCHEMA_VERSION = "0.1";
 // In a real Vite project, this would be: import.meta.env.VITE_APP_VERSION || 'dev'
@@ -8,13 +8,13 @@ const APP_VERSION = "0.3.0";
  * Builds a validation report object.
  * @param userInput The user input from the form/job.
  * @param errorCount The number of validation errors.
- * @param warnCount The number of validation warnings.
+ * @param warnings An array of validation warnings.
  * @returns A ValidationReport object.
  */
 export const buildValidationReport = (
   userInput: UserInput,
   errorCount: number,
-  warnCount: number
+  warnings: Warning[]
 ): ValidationReport => {
   const report: ValidationReport = {
     schemaVersion: SCHEMA_VERSION,
@@ -22,7 +22,7 @@ export const buildValidationReport = (
     timestamp: new Date().toISOString(),
     counts: {
       errors: errorCount,
-      warnings: warnCount,
+      warnings: warnings.length,
     },
     page: {
       title: userInput.geo.companyName,
@@ -33,6 +33,10 @@ export const buildValidationReport = (
 
   if (userInput.toggles) {
     report.toggles = userInput.toggles;
+  }
+  
+  if (warnings.length > 0) {
+    report.warnings = warnings.map(({ path, code }) => ({ path, code }));
   }
 
   return report;
