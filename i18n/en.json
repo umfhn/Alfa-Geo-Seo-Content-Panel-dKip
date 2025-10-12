@@ -12,5 +12,13 @@
   "gate.fixErrors": "Please fix errors",
   "report.download": "Download Report",
   "form.startGeneration": "Start Generation",
-  "form.jobRunning": "Job running..."
+  "form.jobRunning": "Job running...",
+  "lbl.geo.topAnswer": "Top Answer (short)",
+  "lbl.geo.keyFacts": "Key Facts (3–5)",
+  "lbl.text.synopsis": "Synopsis",
+  "lbl.text.body": "Main Text",
+  "lbl.text.cta": "CTA sentence (optional)",
+  "val.len.min": "Too short (min. {n} characters).",
+  "val.len.max": "Too long (max. {n} characters).",
+  "val.array.minmax": "Requires {min}–{max} entries."
 }

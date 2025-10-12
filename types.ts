@@ -55,7 +55,15 @@ export type I18nKey =
   | 'gate.fixErrors'
   | 'report.download'
   | 'form.startGeneration'
-  | 'form.jobRunning';
+  | 'form.jobRunning'
+  | 'lbl.geo.topAnswer'
+  | 'lbl.geo.keyFacts'
+  | 'lbl.text.synopsis'
+  | 'lbl.text.body'
+  | 'lbl.text.cta'
+  | 'val.len.min'
+  | 'val.len.max'
+  | 'val.array.minmax';
 
 export interface ValidationError {
   path: string;
@@ -76,6 +84,8 @@ export interface Geo {
   phone?: string;
   email?: string;
   website?: string;
+  topAnswer?: string;
+  keyFacts?: string[];
 }
 
 export interface HeroMedia {

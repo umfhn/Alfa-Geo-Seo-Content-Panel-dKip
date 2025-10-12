@@ -42,7 +42,30 @@ export const validateForm = (formState: FormState): ValidationError[] => {
     errors.push({ path: 'geo.slug', message: 'val.slugInvalid' });
   }
 
-  // 3. Topics validation
+  // 3. GEO Text Structure validation
+  if (geo.topAnswer && (geo.topAnswer.trim().length < 280)) {
+    errors.push({ path: 'geo.topAnswer', message: 'val.len.min', params: { n: 280 } });
+  }
+  if (geo.topAnswer && geo.topAnswer.trim().length > 500) {
+    errors.push({ path: 'geo.topAnswer', message: 'val.len.max', params: { n: 500 } });
+  }
+
+  const keyFacts = geo.keyFacts?.filter(Boolean) || [];
+  if (geo.keyFacts && geo.keyFacts.length > 0 && (keyFacts.length < 3 || keyFacts.length > 5)) {
+    errors.push({ path: 'geo.keyFacts', message: 'val.array.minmax', params: { min: 3, max: 5 } });
+  }
+  
+  (geo.keyFacts || []).forEach((fact, index) => {
+    if (!fact) return; // Don't validate empty strings in the array
+    if (fact.trim().length < 60) {
+      errors.push({ path: `geo.keyFacts[${index}]`, message: 'val.len.min', params: { n: 60 } });
+    }
+    if (fact.trim().length > 140) {
+      errors.push({ path: `geo.keyFacts[${index}]`, message: 'val.len.max', params: { n: 140 } });
+    }
+  });
+
+  // 4. Topics validation
   const topicList = topics.trim() ? topics.trim().split('\n').filter(Boolean) : [];
   const maxTopics = parseInt(panelCount, 10);
   if (topicList.length > maxTopics) {

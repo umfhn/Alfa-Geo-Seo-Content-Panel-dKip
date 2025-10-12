@@ -25,7 +25,7 @@ const initialMediaState: JobMedia = {
 export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onValidationChange }) => {
   const [inputType, setInputType] = useState<InputType>(InputType.TEXT);
   const [content, setContent] = useState<string>('');
-  const [geo, setGeo] = useState<Geo>({ companyName: '', city: '', region: '', zip: '', branch: '', street: '', slug: '', phone: '', email: '', website: '' });
+  const [geo, setGeo] = useState<Geo>({ companyName: '', city: '', region: '', zip: '', branch: '', street: '', slug: '', phone: '', email: '', website: '', topAnswer: '', keyFacts: [''] });
   const [tone, setTone] = useState<Tone>(Tone.NEUTRAL);
   const [panelCount, setPanelCount] = useState<PanelCount>(PanelCount.SIX);
   const [contentDepth, setContentDepth] = useState<ContentDepth>(ContentDepth.STANDARD);
@@ -82,7 +82,14 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
       slug: "gruenwalds-gartenzauber-musterstadt",
       phone: "0123 456789",
       email: "info@gruenwalds-gartenzauber.de",
-      website: "https://www.gruenwalds-gartenzauber.de"
+      website: "https://www.gruenwalds-gartenzauber.de",
+      topAnswer: "Grünwalds Gartenzauber ist der führende Experte für Garten- und Landschaftsbau in Musterstadt, Bayern. Seit über 15 Jahren verwandeln wir Gärten in grüne Oasen. Unser Leistungsspektrum umfasst die komplette Gartengestaltung, professionelle Baumpflege, nachhaltigen Teichbau und die regelmäßige Pflege von Grünanlagen für private und gewerbliche Kunden.",
+      keyFacts: [
+        "Über 15 Jahre Erfahrung in der Gestaltung und Pflege von Gärten in der Region Musterstadt.",
+        "Team aus zertifizierten Landschaftsarchitekten und Gärtnermeistern garantiert höchste Qualität.",
+        "Fokus auf heimische Pflanzen und nachhaltige Materialien für langlebige, ökologische Gärten.",
+        "Kostenlose Erstberatung vor Ort inklusive einer detaillierten und transparenten Angebotserstellung."
+      ]
     });
     setMedia({
         hero: {
@@ -109,13 +116,29 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
     setOutputFormat('onepage');
   }, []);
 
-  const handleGeoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGeoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setGeo(prev => ({ ...prev, [name]: value }));
   };
   
   const handleContentChange = (value: string) => {
     setContent(value);
+  };
+
+  const handleKeyFactChange = (index: number, value: string) => {
+    setGeo(prev => {
+        const newKeyFacts = [...(prev.keyFacts || [])];
+        newKeyFacts[index] = value;
+        return { ...prev, keyFacts: newKeyFacts };
+    });
+  };
+
+  const addKeyFact = () => {
+      setGeo(prev => ({ ...prev, keyFacts: [...(prev.keyFacts || []), ''] }));
+  };
+
+  const removeKeyFact = (index: number) => {
+      setGeo(prev => ({ ...prev, keyFacts: (prev.keyFacts || []).filter((_, i) => i !== index) }));
   };
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,6 +291,76 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
           <input type="email" name="email" value={geo.email} onChange={handleGeoChange} placeholder="E-Mail-Adresse" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <input type="url" name="website" value={geo.website} onChange={handleGeoChange} placeholder="Webseite (URL)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition sm:col-span-2" />
         </div>
+        <details className="bg-brand-primary/50 p-4 rounded-lg group mt-4">
+            <summary className="text-lg font-semibold list-none cursor-pointer flex justify-between items-center">
+                Zusätzliche GEO-Textstruktur (Optional)
+                <span className="text-brand-accent group-open:rotate-90 transition-transform">&#10148;</span>
+            </summary>
+            <div className="mt-6 space-y-6">
+                <div id={toId('geo.topAnswer')}>
+                    <label htmlFor="geo.topAnswer" className="block text-md font-semibold mb-2">{t('lbl.geo.topAnswer')}</label>
+                    {(() => {
+                        const errorObj = errorsByPath.get('geo.topAnswer');
+                        const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
+                        const value = geo.topAnswer || '';
+                        const hasError = (value.length > 0 && value.length < 280) || value.length > 500;
+                        return (
+                            <>
+                                <div className="relative">
+                                    <textarea id="geo.topAnswer" name="topAnswer" value={value} onChange={handleGeoChange} placeholder="Bündeln Sie hier die Kernaussage in 1-3 Sätzen (280-500 Zeichen)..." rows={4}
+                                        className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`}
+                                        aria-describedby="topAnswer-error topAnswer-counter" aria-invalid={!!error} />
+                                    <span id="topAnswer-counter" className={`absolute bottom-2 right-2 text-xs font-mono px-2 py-1 rounded ${hasError ? 'bg-red-900/80 text-red-200' : 'bg-brand-primary text-brand-text-secondary'}`}>
+                                        {value.length}/500
+                                    </span>
+                                </div>
+                                {error && <p id="topAnswer-error" className="text-red-400 text-sm mt-2" role="alert">{error}</p>}
+                            </>
+                        );
+                    })()}
+                </div>
+                <div id={toId('geo.keyFacts')}>
+                    <label className="block text-md font-semibold mb-2">{t('lbl.geo.keyFacts')}</label>
+                    {(() => {
+                        const errorObj = errorsByPath.get('geo.keyFacts');
+                        const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
+                        const facts = geo.keyFacts || [];
+                        return (
+                            <>
+                                <div className="space-y-4">
+                                    {facts.map((fact, index) => {
+                                        const factErrorObj = errorsByPath.get(`geo.keyFacts[${index}]`);
+                                        const factError = factErrorObj ? t(factErrorObj.message, factErrorObj.params) : undefined;
+                                        const hasError = (fact.length > 0 && fact.length < 60) || fact.length > 140;
+                                        return (
+                                            <div key={index}>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="relative flex-grow" id={toId(`geo.keyFacts[${index}]`)}>
+                                                        <input type="text" value={fact} onChange={(e) => handleKeyFactChange(index, e.target.value)} placeholder={`Faktenorientierter Satz ${index + 1} (60-140 Zeichen)...`}
+                                                            className={`w-full bg-brand-primary border rounded-md p-3 pr-20 focus:ring-2 focus:outline-none transition ${factError ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`}
+                                                            aria-describedby={`keyFact-${index}-error keyFact-${index}-counter`} aria-invalid={!!factError} />
+                                                        <span id={`keyFact-${index}-counter`} className={`absolute top-1/2 -translate-y-1/2 right-2 text-xs font-mono px-2 py-1 rounded ${hasError ? 'bg-red-900/80 text-red-200' : 'bg-brand-primary text-brand-text-secondary'}`}>
+                                                            {fact.length}/140
+                                                        </span>
+                                                    </div>
+                                                    <button type="button" onClick={() => removeKeyFact(index)} className="p-2 bg-red-600 rounded-full text-white hover:bg-red-700 flex-shrink-0" aria-label={`Key-Fact ${index + 1} entfernen`}><IconTrash className="w-4 h-4" /></button>
+                                                </div>
+                                                {factError && <p id={`keyFact-${index}-error`} className="text-red-400 text-sm mt-1 ml-1" role="alert">{factError}</p>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <button type="button" onClick={addKeyFact} className="mt-3 flex items-center space-x-2 text-sm text-brand-accent hover:text-brand-accent-hover font-medium">
+                                    <IconPlusCircle className="w-5 h-5"/>
+                                    <span>Key-Fact hinzufügen</span>
+                                </button>
+                                {error && <p className="text-red-400 text-sm mt-2" role="alert">{error}</p>}
+                            </>
+                        );
+                    })()}
+                </div>
+            </div>
+        </details>
       </div>
       
        {outputFormat === 'onepage' && (

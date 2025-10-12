@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Header } from './components/Header';
 import { InputForm } from './components/InputForm';
@@ -7,12 +6,58 @@ import { JobStatus } from './components/JobStatus';
 import { SettingsModal } from './components/SettingsModal';
 import { SystemCheckPanel } from './components/SystemCheckPanel';
 import { startJob, getJobStatus, controlJob, getTopicSuggestions, initJobFromStorage, clearPersistedJob } from './services/jobService';
-import type { UserInput, Job, Sixpack, CIColors, SectionLabels, PanelSegmentsLockState, PanelResult } from './types';
+import type { UserInput, Job, Sixpack, CIColors, SectionLabels, PanelSegmentsLockState, PanelResult, Geo } from './types';
 import { FLAGS } from './flags';
-import { initI18n, setLocale } from './i18n';
+import { initI18n, setLocale, t } from './i18n';
 
 const POLLING_INTERVAL = 2500; // 2.5 seconds
 const MIGRATION_BANNER_KEY = 'onepage_migration_banner_dismissed';
+
+interface GeoTextPanelProps {
+  geo: Geo;
+  firstPanelSynopsis?: string;
+}
+
+const GeoTextPanel: React.FC<GeoTextPanelProps> = ({ geo, firstPanelSynopsis }) => {
+  const { topAnswer, keyFacts } = geo;
+
+  const validKeyFacts = keyFacts?.filter(Boolean) || [];
+
+  if (!topAnswer && validKeyFacts.length === 0) {
+    return null; // Don't render if there's no GEO text content
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto bg-brand-secondary rounded-2xl shadow-xl p-6 md:p-8">
+      <h3 className="text-xl font-bold text-brand-text mb-4">GEO Text-Vorschau</h3>
+      <div className="space-y-6">
+        {topAnswer && (
+          <div>
+            <h4 className="font-semibold text-brand-accent mb-2">{t('lbl.geo.topAnswer')}</h4>
+            <p className="bg-brand-primary p-4 rounded-lg text-brand-text-secondary text-sm leading-relaxed">{topAnswer}</p>
+          </div>
+        )}
+        {validKeyFacts.length > 0 && (
+          <div>
+            <h4 className="font-semibold text-brand-accent mb-2">{t('lbl.geo.keyFacts')}</h4>
+            <ul className="list-disc list-inside space-y-2 pl-4 text-brand-text-secondary text-sm">
+              {validKeyFacts.map((fact, index) => (
+                <li key={index}>{fact}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {firstPanelSynopsis && (
+           <div>
+            <h4 className="font-semibold text-brand-accent mb-2">{t('lbl.text.synopsis')} (aus erster Sektion)</h4>
+            <p className="bg-brand-primary p-4 rounded-lg text-brand-text-secondary text-sm leading-relaxed italic">"{firstPanelSynopsis}"</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 const App: React.FC = () => {
   const [i18nLoaded, setI18nLoaded] = useState(false);
@@ -347,6 +392,15 @@ const App: React.FC = () => {
             </div>
           )}
 
+          {job && job.results.geo && (job.results.geo.topAnswer || (job.results.geo.keyFacts || []).filter(Boolean).length > 0) && (
+            <div className="mt-8">
+              <GeoTextPanel 
+                geo={job.results.geo}
+                firstPanelSynopsis={job.results.panels.find(p => p.status === 'ok' && p.panel)?.panel?.summary}
+              />
+            </div>
+          )}
+
           {error && (
             <div className="max-w-4xl mx-auto mt-8 bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg" role="alert">
               <strong className="font-bold">Fehler: </strong>
@@ -355,7 +409,7 @@ const App: React.FC = () => {
           )}
 
           {job && job.state !== 'error' && (
-            <div className="mt-12">
+            <div className="mt-8">
               <SixpackRenderer 
                 job={job}
                 validationState={validationState}
