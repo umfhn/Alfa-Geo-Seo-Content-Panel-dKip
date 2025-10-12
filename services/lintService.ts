@@ -43,7 +43,7 @@ export function lintPanel(p: Panel, city?: string, region?: string): LintIssue[]
     issues.push({
       code: 'TITLE_NO_GEO',
       severity: 'WARN',
-      message: 'Der Titel des Panels sollte den Ort oder die Region enthalten.'
+      message: 'Der Titel der Sektion sollte den Ort oder die Region enthalten.'
     });
   }
 
@@ -72,7 +72,7 @@ export function lintSetKeywordDups(panels: Panel[]): LintIssue[] {
     return [{
       code: 'KEYWORD_OVERLAP_WARN',
       severity: 'WARN',
-      message: `Folgende Keywords werden sehr häufig verwendet: ${duplicates.join(', ')}. Dies kann die Themenvielfalt reduzieren.`
+      message: `Folgende Schlüsselwörter werden sehr häufig verwendet: ${duplicates.join(', ')}. Dies kann die Themenvielfalt reduzieren.`
     }];
   }
   

@@ -72,14 +72,14 @@ export const PanelPlaceholder: React.FC<PanelPlaceholderProps> = ({ index, statu
           case 'pending':
               return (
                   <div className="flex items-center space-x-3">
-                      <span className="text-brand-text-secondary">Panel {index + 1}: In Warteschlange...</span>
+                      <span className="text-brand-text-secondary">Sektion {index + 1}: In Warteschlange...</span>
                   </div>
               );
           case 'failed':
               const getErrorSuggestion = (msg: string): string => {
                 const lowerMsg = msg.toLowerCase();
                 if (lowerMsg.includes('inhaltsfilter') || lowerMsg.includes('safety')) {
-                    return "Versuchen Sie, den ursprünglichen Prompt oder die Themen-Vorgaben weniger provokativ oder mehrdeutig zu formulieren. Vermeiden Sie sensible Themen.";
+                    return "Versuchen Sie, den ursprünglichen Prompt oder die Themen-Vorgaben weniger provokativ und eindeutiger zu formulieren. Vermeiden Sie sensible Themen.";
                 }
                 if (lowerMsg.includes('rate-limit')) {
                     return "Das System hat zu viele Anfragen gesendet. Warten Sie bitte einige Minuten, bevor Sie es erneut versuchen.";
@@ -91,7 +91,7 @@ export const PanelPlaceholder: React.FC<PanelPlaceholderProps> = ({ index, statu
               };
               return (
                   <div className="flex flex-col items-start justify-center gap-4 w-full p-4">
-                      <h4 className="font-bold text-red-400 self-center">Panel {index + 1}: Generierung fehlgeschlagen</h4>
+                      <h4 className="font-bold text-red-400 self-center">Sektion {index + 1}: Generierung fehlgeschlagen</h4>
                       <p className="w-full text-sm text-red-300 bg-brand-primary p-2 rounded-md font-mono">{error || "Ein unbekannter Fehler ist aufgetreten."}</p>
                        <details className="w-full text-sm">
                           <summary className="cursor-pointer text-brand-accent hover:underline">Was kann ich tun?</summary>
@@ -109,7 +109,7 @@ export const PanelPlaceholder: React.FC<PanelPlaceholderProps> = ({ index, statu
               );
           case 'skipped':
                 return (
-                    <p className="text-brand-text-secondary">Panel {index + 1} wurde übersprungen.</p>
+                    <p className="text-brand-text-secondary">Sektion {index + 1} wurde übersprungen.</p>
                 );
           default:
               return null;

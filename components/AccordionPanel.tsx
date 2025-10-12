@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import type { PanelResult, CIColors, SectionLabels, PanelSegmentsLockState, Job } from '../types';
-import { IconPlay, IconPause, IconStop, IconEdit, IconClipboardList, IconShieldCheck, IconRefresh, IconLock, IconUnlock, IconDownload } from './Icons';
+import { IconPlay, IconPause, IconStop, IconEdit, IconClipboardList, IconShieldCheck, IconRefresh, IconLock, IconUnlock, IconDownload, IconGripVertical } from './Icons';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
 
 interface AccordionPanelProps {
@@ -193,6 +193,9 @@ const AccordionPanel: React.FC<AccordionPanelProps> = ({
     <div style={panelStyle} className="rounded-xl shadow-lg overflow-hidden transition-all duration-300">
       <div className="p-4 sm:p-6 bg-brand-primary/50 flex flex-col sm:flex-row justify-between items-start gap-4">
         <div className="flex items-center gap-4 w-full">
+            <div className="flex-shrink-0 self-center" aria-hidden="true">
+                <IconGripVertical className="w-6 h-6 text-brand-text-secondary/60" />
+            </div>
             <QualityScoreBadge score={quality_score} />
             <div className="flex-grow">
                 {isEditingTitle ? (
@@ -231,8 +234,8 @@ const AccordionPanel: React.FC<AccordionPanelProps> = ({
                 <button
                     onClick={() => onRegenerate(panelIndex)}
                     className="p-2 rounded-l-full text-brand-text-secondary hover:bg-brand-secondary hover:text-white transition-colors"
-                    aria-label="Panel vollständig neu generieren"
-                    title={is_locked ? "Panel ist gesperrt und kann nicht regeneriert werden." : "Panel vollständig neu generieren"}
+                    aria-label="Sektion vollständig neu generieren"
+                    title={is_locked ? "Sektion ist gesperrt und kann nicht regeneriert werden." : "Sektion vollständig neu generieren"}
                     disabled={is_locked}
                 >
                     <IconRefresh className={`w-5 h-5 ${is_locked ? 'opacity-50' : ''}`} />
@@ -271,8 +274,8 @@ const AccordionPanel: React.FC<AccordionPanelProps> = ({
              <button 
                 onClick={() => onToggleLock(panelIndex)}
                 className="p-2 rounded-full text-brand-text-secondary hover:bg-brand-secondary hover:text-white transition-colors"
-                aria-label={is_locked ? "Panel entsperren" : "Panel sperren"}
-                title={is_locked ? "Panel entsperren" : "Panel sperren"}
+                aria-label={is_locked ? "Sektion entsperren" : "Sektion sperren"}
+                title={is_locked ? "Sektion entsperren" : "Sektion sperren"}
             >
                 {is_locked ? <IconUnlock className="w-5 h-5 text-brand-accent" /> : <IconLock className="w-5 h-5" />}
             </button>
@@ -287,8 +290,8 @@ const AccordionPanel: React.FC<AccordionPanelProps> = ({
             <button 
                 onClick={() => onDownloadPanel(panelIndex)}
                 className="p-2 rounded-full text-brand-text-secondary hover:bg-brand-secondary hover:text-white transition-colors"
-                aria-label="Panel als HTML herunterladen"
-                title="Panel als HTML herunterladen"
+                aria-label="Sektion als HTML herunterladen"
+                title="Sektion als HTML herunterladen"
             >
                 <IconDownload className="w-5 h-5" />
             </button>

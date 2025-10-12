@@ -59,7 +59,7 @@ export const SystemCheckPanel: React.FC = () => {
         try {
             const result = await runHealthCheck(type);
             setReport(result);
-            setToast(`Test '${type === 'connection' ? 'Verbindung' : 'KI-Verbindung'}' erfolgreich abgeschlossen.`);
+            setToast(`Test '${type === 'connection' ? 'Verbindung' : 'KI-Verbindung'}' wurde erfolgreich abgeschlossen.`);
         } catch (error) {
             console.error(`Health check failed for type: ${type}`, error);
             const newReport = getInitialReport();
@@ -193,7 +193,7 @@ export const SystemCheckPanel: React.FC = () => {
                     </div>
                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center text-sm">
                         <div className="bg-brand-primary p-2 rounded-md">
-                            <div className="text-xs text-brand-text-secondary">App Version</div>
+                            <div className="text-xs text-brand-text-secondary">App-Version</div>
                             <div className="font-bold">{report.checks.system.app_version}</div>
                         </div>
                         <div className="bg-brand-primary p-2 rounded-md">

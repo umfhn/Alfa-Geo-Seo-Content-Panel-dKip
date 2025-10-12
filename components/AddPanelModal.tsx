@@ -45,7 +45,7 @@ export const AddPanelModal: React.FC<AddPanelModalProps> = ({ isOpen, onClose, o
       >
         <div className="p-6 space-y-6">
           <div>
-              <h2 className="text-xl font-bold text-brand-text mb-2">Neues Panel hinzufügen</h2>
+              <h2 className="text-xl font-bold text-brand-text mb-2">Neue Sektion hinzufügen</h2>
               <p className="text-sm text-brand-text-secondary">
                 Wählen Sie einen Vorschlag oder geben Sie ein eigenes Thema an, um Duplikate zu vermeiden.
               </p>
@@ -92,7 +92,7 @@ export const AddPanelModal: React.FC<AddPanelModalProps> = ({ isOpen, onClose, o
             disabled={!topic.trim()}
             className="px-4 py-2 text-sm rounded-md bg-brand-accent text-white hover:bg-brand-accent-hover transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
-            Panel generieren
+            Sektion generieren
           </button>
         </div>
       </div>

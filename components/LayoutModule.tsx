@@ -113,21 +113,21 @@ export const LayoutModule: React.FC = () => {
     <style>{editorStyles}</style>
     <div className="dkip-layout-editor__container">
       <div className="dkip-layout-editor__controls">
-        <h3 className="dkip-layout-editor__title">Layout Konfiguration</h3>
+        <h3 className="dkip-layout-editor__title">Layout-Konfiguration</h3>
         <div className="dkip-layout-editor__section">
             <label className="dkip-layout-editor__label" htmlFor="module_label">Modul-Beschriftung</label>
             <input type="text" id="module_label" value={config.module_label} onChange={e => handleConfigChange('module_label', e.target.value)} className="dkip-layout-editor__input" />
         </div>
 
         <div className="dkip-layout-editor__section">
-            <VisualSelector label="Frame Variante" value={config.frame_variant} onChange={v => handleConfigChange('frame_variant', v)} options={[
+            <VisualSelector label="Frame-Variante" value={config.frame_variant} onChange={v => handleConfigChange('frame_variant', v)} options={[
                 { value: FrameVariant.F1, label: 'Standard', icon: <IconLayoutFrame variant="F1" /> },
                 { value: FrameVariant.F2, label: 'Header-Fokus', icon: <IconLayoutFrame variant="F2" /> },
                 { value: FrameVariant.F3, label: 'Footer-Fokus', icon: <IconLayoutFrame variant="F3" /> },
             ]} />
         </div>
         <div className="dkip-layout-editor__section">
-            <VisualSelector label="Content Variante" value={config.content_variant} onChange={v => handleConfigChange('content_variant', v)} options={[
+            <VisualSelector label="Content-Variante" value={config.content_variant} onChange={v => handleConfigChange('content_variant', v)} options={[
                 { value: ContentVariant.L1, label: 'Stack', icon: <IconLayoutStack /> },
                 { value: ContentVariant.L2, label: 'Split', icon: <IconLayoutSplit /> },
                 { value: ContentVariant.L3, label: 'Grid', icon: <IconLayoutGrid /> },

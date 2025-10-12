@@ -95,14 +95,14 @@ export const ExplainabilityCard: React.FC<ExplainabilityCardProps> = ({ panelRes
                 <div className="flex justify-between items-center p-4 border-b border-brand-accent/20">
                     <div className="flex items-center space-x-3">
                         <IconShieldCheck className="w-6 h-6 text-brand-accent" />
-                        <h2 className="text-xl font-bold">Qualitäts-Pipeline: Panel {index + 1}</h2>
+                        <h2 className="text-xl font-bold">Qualitäts-Pipeline: Sektion {index + 1}</h2>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-brand-primary text-2xl" aria-label="Schließen">&times;</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto space-y-6">
                     <div>
-                        <h3 className="font-semibold text-brand-text mb-2">Panel-Titel</h3>
+                        <h3 className="font-semibold text-brand-text mb-2">Titel der Sektion</h3>
                         <p className="bg-brand-primary p-3 rounded-md text-brand-text-secondary">{panel?.title || 'N/A'}</p>
                     </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Job, CIColors, Panel, SectionLabels, ExportProfile, PanelResult, LintIssue, SeoData } from '../types';
 import AccordionPanel from './AccordionPanel';
 import { AddPanelModal } from './AddPanelModal';
@@ -120,6 +120,7 @@ interface SixpackRendererProps {
   onRegeneratePanel: (panelIndex: number) => void;
   onRegeneratePanelSegment: (panelIndex: number, segment: string) => void;
   onTogglePanelLock: (panelIndex: number) => void;
+  onReorderPanels: (sourceIndex: number, destinationIndex: number) => void;
   onJobControl: (action: 'resume' | 'pause' | 'next' | 'cancel' | 'regenerate_panel' | 'regenerate_panel_segment' | 'run_linter', panelIndex?: number) => void;
   onAddNewPanel: (topic: string) => void;
   onOpenAddPanelModal: () => void;
@@ -164,7 +165,7 @@ const NumberInput: React.FC<{ label: string; value: number; onChange: (e: React.
 );
 
 export const SixpackRenderer: React.FC<SixpackRendererProps> = ({ 
-    job, onUpdatePanelSummary, onUpdatePanelTitle, onUpdateCIColors, onUpdateSectionLabels, onRegeneratePanel, onRegeneratePanelSegment, onTogglePanelLock, onJobControl, onAddNewPanel, onOpenAddPanelModal, topicSuggestions,
+    job, onUpdatePanelSummary, onUpdatePanelTitle, onUpdateCIColors, onUpdateSectionLabels, onRegeneratePanel, onRegeneratePanelSegment, onTogglePanelLock, onReorderPanels, onJobControl, onAddNewPanel, onOpenAddPanelModal, topicSuggestions,
 }) => {
   const [showJson, setShowJson] = useState(false);
   const [exportSelection, setExportSelection] = useState<string>('all');
@@ -184,6 +185,9 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   const [seoData, setSeoData] = useState<SeoData | null>(null);
   const [isJsonLdVisible, setIsJsonLdVisible] = useState(false);
   const [isSeoLoading, setIsSeoLoading] = useState(false);
+  
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const draggedPanelIndex = useRef<number | null>(null);
 
 
   const { results } = job;
@@ -248,11 +252,11 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
 
   const getPanelStatus = useCallback((panelResult: PanelResult): PanelStatusInfo => {
     if (!panelResult.panel || panelResult.status !== 'ok') {
-        return { status: 'error', primaryReason: { code: 'MISSING_TITLE_OR_SLUG', message: 'Panel-Inhalte fehlen oder sind fehlerhaft.', severity: 'ERROR' } };
+        return { status: 'error', primaryReason: { code: 'MISSING_TITLE_OR_SLUG', message: 'Sektions-Inhalte fehlen oder sind fehlerhaft.', severity: 'ERROR' } };
     }
     const lint = panelResult.linting_results;
     if (!lint || lint.issues.some(i => i.code === 'NEVER_LINTED')) {
-        return { status: 'stale', primaryReason: { code: 'NEVER_LINTED', message: 'Panel wurde noch nie geprüft.', severity: 'ERROR' } };
+        return { status: 'stale', primaryReason: { code: 'NEVER_LINTED', message: 'Sektion wurde noch nie geprüft.', severity: 'ERROR' } };
     }
     const currentHash = calculatePanelContentHash(panelResult.panel);
     if (currentHash !== lint.content_hash) {
@@ -269,13 +273,6 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
 
   const successfulPanels = useMemo(() => panelResults.filter(pr => pr.status === 'ok' && pr.panel).map(pr => pr!), [panelResults]);
   
-  const expectedPanelCount = useMemo(() => {
-      if (job?.userInput?.panelCount) {
-          return parseInt(job.userInput.panelCount, 10);
-      }
-      return job?.step?.of || panelResults.length || 6;
-  }, [job, panelResults.length]);
-
   const gridContainerClasses = useMemo(() => {
     return 'grid grid-cols-1 gap-8';
   }, []);
@@ -393,6 +390,47 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
 
   }, [job, geo]);
 
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    draggedPanelIndex.current = index;
+    e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+        if (e.target && (e.target as HTMLElement).classList) {
+            (e.target as HTMLElement).classList.add('dragging');
+        }
+    }, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+      e.preventDefault();
+      if (draggedPanelIndex.current !== null && draggedPanelIndex.current !== index) {
+          setDragOverIndex(index);
+      }
+  };
+
+  const handleDragLeave = () => {
+      setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, destinationIndex: number) => {
+      e.preventDefault();
+      const sourceIndexStr = e.dataTransfer.getData('text/plain');
+      setDragOverIndex(null);
+      if (sourceIndexStr === '') return;
+
+      const sourceIndex = parseInt(sourceIndexStr, 10);
+      
+      if (sourceIndex !== destinationIndex) {
+          onReorderPanels(sourceIndex, destinationIndex);
+      }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+      (e.currentTarget as HTMLElement).classList.remove('dragging');
+      setDragOverIndex(null);
+      draggedPanelIndex.current = null;
+  };
+
 
   if (!geo || !topic) return null;
 
@@ -403,13 +441,13 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
         case 'WARN':
             return <div className="p-3 rounded-lg bg-yellow-900/50 border border-yellow-700 text-yellow-200 text-sm"><strong className="font-bold">Linter-Warnungen vorhanden.</strong> Export ist möglich. Prüfen Sie die Hinweise in der Liste.</div>;
         case 'ERROR':
-            return <div className="p-3 rounded-lg bg-red-900/50 border border-red-700 text-red-200 text-sm"><strong className="font-bold">Export blockiert.</strong> {exportStatus.errorCount} Panel(s) mit Fehlern. Bitte beheben und erneut prüfen.</div>;
+            return <div className="p-3 rounded-lg bg-red-900/50 border border-red-700 text-red-200 text-sm"><strong className="font-bold">Export blockiert.</strong> {exportStatus.errorCount} Sektion(en) mit Fehlern. Bitte beheben und erneut prüfen.</div>;
         case 'STALE':
             return (
                 <div className="p-3 rounded-lg bg-gray-700/50 border border-gray-500 text-gray-300 text-sm flex flex-col sm:flex-row justify-between items-center gap-3">
                     <div>
                         <strong className="font-bold">Linter-Check fehlt.</strong>
-                        <p>Für {exportStatus.staleCount} von {exportStatus.totalCount} ausgewählten Panels liegt kein passender Linter-Report vor.</p>
+                        <p>Für {exportStatus.staleCount} von {exportStatus.totalCount} ausgewählten Sektionen liegt kein passender Linter-Report vor.</p>
                     </div>
                     <button onClick={handleQuickLinter} disabled={isLinting} className="px-4 py-2 text-sm rounded-md bg-brand-accent text-white hover:bg-brand-accent-hover transition-colors disabled:bg-gray-500 flex-shrink-0">
                         {isLinting ? 'Prüfe...' : 'Jetzt Linter für Auswahl ausführen'}
@@ -435,13 +473,43 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
           }
       }
   `;
+  
+  const dndStyles = `
+    .panel-wrapper.dragging {
+      opacity: 0.4;
+      border: 2px dashed #4A7BFF;
+      background: transparent;
+      transform: scale(0.98);
+    }
+    .panel-wrapper.dragging > * {
+      visibility: hidden;
+    }
+    .panel-wrapper.drag-over::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background-color: #4A7BFF;
+      border-radius: 2px;
+      z-index: 10;
+    }
+    .draggable-panel {
+      cursor: grab;
+    }
+    .draggable-panel:active {
+      cursor: grabbing;
+    }
+  `;
 
   return (
     <>
     <style>{dynamicTitleStyles}</style>
+    <style>{dndStyles}</style>
     <div className="max-w-7xl mx-auto space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-brand-text">Content für: {topic}</h2>
+        <h2 className="text-3xl font-bold text-brand-text">Inhalt für: {topic}</h2>
         <p className="text-brand-text-secondary">{geo.branch && `${geo.branch} | `}{geo.street && `${geo.street}, `}{geo.zip} {geo.city} {geo.region && `(${geo.region})`}</p>
       </div>
 
@@ -543,15 +611,46 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
       <div id="preview-section">
         <div className={viewportWrapperClasses}>
           <div className={gridContainerClasses}>
-              {Array.from({ length: expectedPanelCount }).map((_, index) => {
-              const panelResult = panelResults.find(p => p.index === index);
-              if (panelResult && panelResult.status === 'ok' && panelResult.panel) {
-                  return <AccordionPanel key={`${panelResult.panel.slug}-${index}`} panelResult={panelResult} ciColors={editableColors} sectionLabels={section_labels} job={job} onUpdateSummary={onUpdatePanelSummary} onUpdateTitle={onUpdatePanelTitle} onShowExplainability={() => setActiveExplainabilityPanelIndex(index)} onRegenerate={onRegeneratePanel} onRegeneratePanelSegment={onRegeneratePanelSegment} onToggleLock={onTogglePanelLock} onDownloadPanel={handleDownloadSinglePanel} />;
-              }
-              const currentStatus = panelResult?.status || 'pending';
-              const placeholderStatus = currentStatus === 'ok' ? 'failed' : currentStatus;
-              const placeholderError = currentStatus === 'ok' ? 'Panel-Daten sind inkonsistent (Status \'ok\', aber keine Inhalte).' : panelResult?.error;
-              return <PanelPlaceholder key={`placeholder-${index}`} index={index} status={placeholderStatus} error={placeholderError} job={job} onRegeneratePanel={onRegeneratePanel} onJobControl={onJobControl} />;
+              {panelResults.map((panelResult, displayIndex) => {
+                  const isDraggable = panelResult.status === 'ok' && panelResult.panel && !panelResult.is_locked;
+                  return (
+                      <div
+                          key={panelResult.index} // Use original creation index as stable key
+                          draggable={isDraggable}
+                          onDragStart={isDraggable ? e => handleDragStart(e, displayIndex) : undefined}
+                          onDragOver={isDraggable ? e => handleDragOver(e, displayIndex) : undefined}
+                          onDragLeave={isDraggable ? handleDragLeave : undefined}
+                          onDrop={isDraggable ? e => handleDrop(e, displayIndex) : undefined}
+                          onDragEnd={isDraggable ? handleDragEnd : undefined}
+                          className={`panel-wrapper relative transition-all duration-200 ${isDraggable ? 'draggable-panel' : ''} ${dragOverIndex === displayIndex ? 'drag-over' : ''}`}
+                      >
+                          {panelResult.status === 'ok' && panelResult.panel ? (
+                              <AccordionPanel
+                                  panelResult={panelResult}
+                                  ciColors={editableColors}
+                                  sectionLabels={section_labels}
+                                  job={job}
+                                  onUpdateSummary={onUpdatePanelSummary}
+                                  onUpdateTitle={onUpdatePanelTitle}
+                                  onShowExplainability={() => setActiveExplainabilityPanelIndex(panelResult.index)}
+                                  onRegenerate={onRegeneratePanel}
+                                  onRegeneratePanelSegment={onRegeneratePanelSegment}
+                                  onToggleLock={onTogglePanelLock}
+                                  onDownloadPanel={handleDownloadSinglePanel}
+                              />
+                          ) : (
+                              <PanelPlaceholder
+                                  key={`placeholder-${panelResult.index}`}
+                                  index={panelResult.index}
+                                  status={panelResult.status === 'ok' ? 'failed' : panelResult.status}
+                                  error={panelResult.error}
+                                  job={job}
+                                  onRegeneratePanel={onRegeneratePanel}
+                                  onJobControl={onJobControl}
+                              />
+                          )}
+                      </div>
+                  );
               })}
           </div>
         </div>
@@ -560,7 +659,7 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
 
       {job.state === 'done' && (
         <div className="text-center pt-4">
-          <button onClick={handleOpenModal} className="inline-flex items-center justify-center px-8 py-4 bg-brand-secondary text-brand-text font-bold rounded-lg border-2 border-dashed border-brand-accent/50 hover:border-brand-accent hover:bg-brand-primary transition-colors duration-300 shadow-lg"> <span className="text-2xl mr-3">+</span> Neues Panel hinzufügen </button>
+          <button onClick={handleOpenModal} className="inline-flex items-center justify-center px-8 py-4 bg-brand-secondary text-brand-text font-bold rounded-lg border-2 border-dashed border-brand-accent/50 hover:border-brand-accent hover:bg-brand-primary transition-colors duration-300 shadow-lg"> <span className="text-2xl mr-3">+</span> Neue Sektion hinzufügen </button>
         </div>
       )}
 
@@ -590,15 +689,15 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
             {renderExportBanner()}
             <div className="space-y-4 mt-4">
               <div>
-                <label htmlFor="export-selection" className="block text-sm font-medium text-brand-text-secondary mb-1">Panel wählen</label>
+                <label htmlFor="export-selection" className="block text-sm font-medium text-brand-text-secondary mb-1">Sektion wählen</label>
                 <select id="export-selection" value={exportSelection} onChange={(e) => setExportSelection(e.target.value)} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" disabled={successfulPanels.length === 0}>
-                  <option value="all">Alle fertigen Panels exportieren ({successfulPanels.length})</option>
+                  <option value="all">Alle fertigen Sektionen exportieren ({successfulPanels.length})</option>
                   {successfulPanels.map((panelResult, index) => {
                       const { status } = getPanelStatus(panelResult);
                       const statusIcon = { ok: '✅', warn: '⚠️', error: '❌', stale: '❌' }[status];
                       return (
                         <option key={panelResult.panel!.slug + index} value={index}>
-                          {statusIcon} Panel {panelResult.index + 1}: {panelResult.panel?.title || '(ohne Titel)'}
+                          {statusIcon} Sektion {panelResult.index + 1}: {panelResult.panel?.title || '(ohne Titel)'}
                         </option>
                       );
                   })}

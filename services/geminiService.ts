@@ -9,9 +9,9 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const panelSchema = {
   type: Type.OBJECT,
   properties: {
-    slug: { type: Type.STRING, description: 'Ein SEO-freundlicher Slug für das Panel, z.B. "kernleistungen-in-berlin".' },
-    title: { type: Type.STRING, description: 'Ein kreativer und einzigartiger Titel für das Panel mit GEO-Bezug.' },
-    summary: { type: Type.STRING, description: 'Eine prägnante Zusammenfassung des Panel-Inhalts in 2-3 Sätzen.' },
+    slug: { type: Type.STRING, description: 'Ein SEO-freundlicher Slug für die Sektion, z.B. "kernleistungen-in-berlin".' },
+    title: { type: Type.STRING, description: 'Ein kreativer und einzigartiger Titel für die Sektion mit GEO-Bezug.' },
+    summary: { type: Type.STRING, description: 'Eine prägnante Zusammenfassung des Sektions-Inhalts in 2-3 Sätzen.' },
     sections: {
       type: Type.ARRAY,
       description: 'Eine Liste von 2-3 inhaltlichen Abschnitten, die als Akkordeons dargestellt werden.',
@@ -42,7 +42,7 @@ const panelSchema = {
     },
     keywords: {
       type: Type.ARRAY,
-      description: 'Eine Liste von 5-8 relevanten Keywords für dieses Panel.',
+      description: 'Eine Liste von 5-8 relevanten Keywords für diese Sektion.',
       items: { type: Type.STRING }
     }
   },
@@ -53,14 +53,14 @@ const createPrompt = (userInput: UserInput, topic: string, existingTitles: strin
     const { geo, tone, contentDepth } = userInput;
 
     const existingTitlesPrompt = existingTitles.length > 0
-        ? `Bestehende Titel (vermeide Duplikate und zu hohe Ähnlichkeit): ${existingTitles.join(', ')}`
-        : 'Dies ist das erste Panel, es gibt noch keine anderen Titel.';
+        ? `Bestehende Titel (vermeide Duplikate und zu große Ähnlichkeit): ${existingTitles.join(', ')}`
+        : 'Dies ist die erste Sektion, es gibt noch keine anderen Titel.';
 
     return `
-      Erstelle den Inhalt für ein einzelnes Content-Panel für die Firma "${geo.companyName}" in ${geo.city}, ${geo.region}.
+      Erstelle den Inhalt für eine einzelne Content-Sektion für die Firma "${geo.companyName}" in ${geo.city}, ${geo.region}.
       Die Firma ist in der Branche "${geo.branch}" tätig.
       
-      **Thema des Panels:** "${topic}"
+      **Thema der Sektion:** "${topic}"
 
       **Anforderungen:**
       1.  **Tonalität:** ${tone}.
@@ -71,7 +71,7 @@ const createPrompt = (userInput: UserInput, topic: string, existingTitles: strin
 
       ${existingTitlesPrompt}
 
-      Basierend auf diesen Informationen, generiere jetzt das JSON-Objekt für das Panel.
+      Basierend auf diesen Informationen, generiere jetzt das JSON-Objekt für die Sektion.
     `;
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Header } from './components/Header';
 import { InputForm } from './components/InputForm';
@@ -6,7 +7,7 @@ import { JobStatus } from './components/JobStatus';
 import { SettingsModal } from './components/SettingsModal';
 import { SystemCheckPanel } from './components/SystemCheckPanel';
 import { startJob, getJobStatus, controlJob, getTopicSuggestions, initJobFromStorage, clearPersistedJob } from './services/jobService';
-import type { UserInput, Job, Sixpack, CIColors, SectionLabels, PanelSegmentsLockState } from './types';
+import type { UserInput, Job, Sixpack, CIColors, SectionLabels, PanelSegmentsLockState, PanelResult } from './types';
 import { FLAGS } from './flags';
 
 const POLLING_INTERVAL = 2500; // 2.5 seconds
@@ -45,16 +46,28 @@ const App: React.FC = () => {
         setJob(prevJob => {
             // Preserve lock state from UI if it exists, as backend mock won't have it
             if (prevJob && updatedJob) {
-                updatedJob.results.panels.forEach((panel, index) => {
-                    const prevPanel = prevJob.results.panels.find(p => p.index === panel.index);
+                // Also preserve the panel order from the previous state during polling updates
+                const prevOrderMap = new Map(prevJob.results.panels.map(p => [p.index, p]));
+                const newPanels = updatedJob.results.panels.sort((a, b) => {
+                    const aPos = prevJob.results.panels.findIndex(p => p.index === a.index);
+                    const bPos = prevJob.results.panels.findIndex(p => p.index === b.index);
+                    return aPos - bPos;
+                });
+
+                updatedJob.results.panels = newPanels.map(panel => {
+                    // FIX: Added type assertion to resolve 'unknown' type error. This can happen when state structure is inconsistent.
+                    const prevPanel = prevOrderMap.get(panel.index) as PanelResult | undefined;
                     if (prevPanel) {
                         if (prevPanel.is_locked) {
-                            updatedJob.results.panels[index].is_locked = true;
+                            // FIX: Cast panel to allow property assignment.
+                            (panel as PanelResult).is_locked = true;
                         }
                         if (prevPanel.segment_locks) {
-                            updatedJob.results.panels[index].segment_locks = prevPanel.segment_locks;
+                           // FIX: Cast panel to allow property assignment.
+                           (panel as PanelResult).segment_locks = prevPanel.segment_locks;
                         }
                     }
+                    return panel;
                 });
             }
             return updatedJob;
@@ -147,19 +160,17 @@ const App: React.FC = () => {
   const handleUpdateCIColors = useCallback((newColors: CIColors) => {
     setJob(prev => {
         if (!prev) return null;
+        // FIX: Corrected the malformed state update. This was corrupting the job object structure, leading to the downstream type errors.
         return {
             ...prev,
+            userInput: {
+                ...prev.userInput,
+                // Persist design changes for next job if user wants to keep them
+                keepDesign: true 
+            },
             results: {
-                ...prev,
-                userInput: {
-                    ...prev.userInput,
-                    // Persist design changes for next job if user wants to keep them
-                    keepDesign: true 
-                },
-                results: {
-                    ...prev.results,
-                    ci_colors: newColors,
-                }
+                ...prev.results,
+                ci_colors: newColors,
             }
         };
     });
@@ -219,6 +230,24 @@ const App: React.FC = () => {
       });
   }, []);
   
+  const handleReorderPanels = useCallback((sourceIndex: number, destinationIndex: number) => {
+    setJob(prev => {
+        if (!prev) return null;
+
+        const panelList = Array.from(prev.results.panels);
+        const [moved] = panelList.splice(sourceIndex, 1);
+        panelList.splice(destinationIndex, 0, moved);
+        
+        return {
+            ...prev,
+            results: {
+                ...prev.results,
+                panels: panelList,
+            }
+        };
+    });
+  }, []);
+
   const handleDismissBanner = useCallback(() => {
     localStorage.setItem(MIGRATION_BANNER_KEY, 'true');
     setShowMigrationBanner(false);
@@ -311,6 +340,7 @@ const App: React.FC = () => {
                 onRegeneratePanel={handleRegeneratePanel}
                 onRegeneratePanelSegment={handleRegeneratePanelSegment}
                 onTogglePanelLock={handleTogglePanelLock}
+                onReorderPanels={handleReorderPanels}
                 onJobControl={handleJobControl}
                 onAddNewPanel={handleAddNewPanel}
                 onOpenAddPanelModal={handleOpenAddPanelModal}

@@ -83,9 +83,9 @@ export const useTextToSpeech = (text: string) => {
     };
     
     utterance.onerror = (event: SpeechSynthesisErrorEvent) => {
-      // "canceled" is a normal event when we call stop() or play() again.
-      // We don't need to log it as an error.
-      if (event.error === 'canceled') {
+      // "canceled" and "interrupted" are normal events when we call stop() or play() again.
+      // We don't need to log them as errors.
+      if (event.error === 'canceled' || event.error === 'interrupted') {
           return;
       }
       console.error(`SpeechSynthesis Error: ${event.error} for sentence: "${sentence}"`);

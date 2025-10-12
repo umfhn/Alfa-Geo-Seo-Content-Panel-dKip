@@ -58,7 +58,7 @@ export const JobStatus: React.FC<JobStatusProps> = ({ job, isAutoRun, onAutoRunC
                  <button onClick={() => onJobControl('resume')} className="px-4 py-2 text-sm rounded-md bg-green-600/80 hover:bg-green-600 text-white transition-colors">Fortsetzen</button>
               )}
               {state === 'paused' && !isAutoRun && (
-                 <button onClick={() => onJobControl('next')} className="px-4 py-2 text-sm rounded-md bg-brand-accent hover:bg-brand-accent-hover text-white transition-colors">Nächstes Panel</button>
+                 <button onClick={() => onJobControl('next')} className="px-4 py-2 text-sm rounded-md bg-brand-accent hover:bg-brand-accent-hover text-white transition-colors">Nächste Sektion</button>
               )}
               {state !== 'done' && (
                   <button onClick={() => onJobControl('cancel')} className="px-4 py-2 text-sm rounded-md bg-red-700/80 hover:bg-red-700 text-white transition-colors">Abbrechen</button>
