@@ -439,6 +439,11 @@ export interface AcfSubField {
   conditional_logic?: number;
   wrapper?: { width: string; class: string; id: string; };
   sub_fields?: AcfSubField[];
+  min?: string | number;
+  max?: string | number;
+  button_label?: string;
+  tabs?: string;
+  toolbar?: string;
   [key: string]: any;
 }
 

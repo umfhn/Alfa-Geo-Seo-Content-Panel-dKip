@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 // FIX: Add QualityScoreBreakdown to imports for type-safe key iteration.
 import type { PanelResult, QualityScoreBreakdown, QualityScoreBreakdownValue } from '../types';
@@ -24,7 +25,7 @@ const CheckListItem: React.FC<{ label: string, passed: boolean, details?: string
     </li>
 );
 
-// FIX: Renamed component to avoid name collision with the imported type.
+// FIX: Renamed component from `QualityScoreBreakdown` to `QualityScoreBreakdownComponent` to avoid a name collision with the imported type.
 const QualityScoreBreakdownComponent: React.FC<{ breakdown: PanelResult['linting_results']['quality_score_breakdown'] }> = ({ breakdown }) => {
     if (!breakdown || Object.keys(breakdown).length === 0) return null;
 
@@ -38,7 +39,7 @@ const QualityScoreBreakdownComponent: React.FC<{ breakdown: PanelResult['linting
 
     return (
         <div className="space-y-2">
-            {/* FIX: Use a specific key type `keyof QualityScoreBreakdown` to fix the indexing error. */}
+            {/* FIX: Use a specific key type `keyof QualityScoreBreakdown` to fix the indexing error when accessing `breakdown[key]`. */}
             {(Object.keys(breakdown) as Array<keyof QualityScoreBreakdown>).map((key) => {
                 const value = breakdown[key];
                 return (
