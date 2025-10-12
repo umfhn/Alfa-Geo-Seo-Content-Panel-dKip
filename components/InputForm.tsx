@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { UserInput, Geo, JobMedia, GalleryMediaItem } from '../types';
 import { InputType, Tone, PanelCount, ContentDepth } from '../types';
 import { IconGenerate, IconSparkles, IconPlusCircle, IconTrash } from './Icons';
@@ -8,18 +8,18 @@ interface InputFormProps {
   isLoading: boolean;
 }
 
-const compactInputPlaceholder = `{
-  "topic": "Beispiel GmbH",
-  "geo": { "city": "Berlin", "region": "Berlin", "zip": "10115" },
-  "bullets": ["Punkt 1", "Punkt 2"],
-  "faqs": [{ "q": "Frage?", "a": "Antwort." }],
-  "tone": "neutral"
-}`;
-
 const initialMediaState: JobMedia = {
     hero: { avif1280: '', avif1920: '', webp1280: '', webp1920: '', jpg: '', alt: '', headline: '', subtitle: '', ctaUrl: '' },
     gallery: [],
     logoUrl: ''
+};
+
+// Central place for error messages to support i18n later
+const ERROR_MESSAGES = {
+    content_required: "Eine Beschreibung, URL oder JSON ist erforderlich.",
+    companyName_required: "Der Firmenname ist ein Pflichtfeld.",
+    city_required: "Die Stadt ist ein Pflichtfeld.",
+    topics_exceeded: (max: number) => `Die Anzahl der Themen darf die gewählte Anzahl Sektionen (${max}) nicht überschreiten.`,
 };
 
 export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) => {
@@ -33,35 +33,54 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
   const [topics, setTopics] = useState<string>('');
   const [outputFormat, setOutputFormat] = useState<'onepage' | 'legacy'>('onepage');
   const [media, setMedia] = useState<JobMedia>(initialMediaState);
-  const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const topicList = topics.trim() ? topics.trim().split('\n').filter(Boolean) : [];
-  const maxTopics = parseInt(panelCount, 10);
-  const topicsError = topicList.length > maxTopics;
+  const validate = useCallback(() => {
+    const newErrors: Record<string, string> = {};
+    if (!content.trim()) newErrors.content = ERROR_MESSAGES.content_required;
+    if (!geo.companyName.trim()) newErrors.companyName = ERROR_MESSAGES.companyName_required;
+    if (!geo.city.trim()) newErrors.city = ERROR_MESSAGES.city_required;
+
+    const topicList = topics.trim() ? topics.trim().split('\n').filter(Boolean) : [];
+    const maxTopics = parseInt(panelCount, 10);
+    if (topicList.length > maxTopics) {
+        newErrors.topics = ERROR_MESSAGES.topics_exceeded(maxTopics);
+    }
+
+    return newErrors;
+  }, [content, geo.companyName, geo.city, topics, panelCount]);
+  
+  // Debounced Live Validation
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      // Don't show errors while user is typing in an empty form for the first time
+      const isDirty = content || geo.companyName || geo.city || topics;
+      if (isDirty) {
+        setErrors(validate());
+      }
+    }, 500); // 500ms debounce
+    return () => clearTimeout(handler);
+  }, [validate, content, geo.companyName, geo.city, topics, panelCount]);
+
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
+    const validationErrors = validate();
+    setErrors(validationErrors);
 
-    // --- PRE-CHECK VALIDATION ---
-    const newErrors: { [key: string]: string | null } = {};
-    if (!content.trim()) newErrors.content = "Eine Beschreibung, URL oder JSON ist erforderlich.";
-    if (!geo.companyName.trim()) newErrors.companyName = "Der Firmenname ist ein Pflichtfeld.";
-    if (!geo.city.trim()) newErrors.city = "Die Stadt ist ein Pflichtfeld.";
-
-    if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
+    if (Object.keys(validationErrors).length > 0) {
+        // Find first element with an error and focus it for A11y
+        const firstErrorKey = Object.keys(validationErrors)[0];
+        const errorElement = formRef.current?.querySelector(`[name="${firstErrorKey}"]`) as HTMLElement;
+        errorElement?.focus();
         return;
     }
-    setErrors({}); // Clear errors on successful submission start
     
-    const finalTopics = topics.trim() ? topicList : undefined;
-    if (topicsError) {
-        setErrors(prev => ({...prev, topics: `Sie können maximal ${panelCount} Themen angeben. Sie haben ${topicList.length}.`}));
-        return;
-    }
+    const finalTopics = topics.trim() ? topics.trim().split('\n').filter(Boolean) : undefined;
     onGenerate({ inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics: finalTopics, outputFormat, media });
-  }, [onGenerate, inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics, topicList, topicsError, outputFormat, media]);
+  }, [onGenerate, validate, inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics, outputFormat, media]);
   
   const handleFillWithDummyData = useCallback(() => {
     setErrors({}); // Clear any validation errors
@@ -107,17 +126,11 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
 
   const handleGeoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setGeo(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-        setErrors(prev => ({ ...prev, [name]: null }));
-    }
+    setGeo(prev => ({ ...prev, [name]: value.trimStart() }));
   };
   
   const handleContentChange = (value: string) => {
     setContent(value);
-    if (errors.content) {
-        setErrors(prev => ({ ...prev, content: null }));
-    }
   };
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,18 +159,23 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
   const removeGalleryItem = (id: string) => {
       setMedia(prev => ({ ...prev, gallery: prev.gallery.filter(item => item.id !== id)}));
   };
+  
+  const topicList = topics.trim() ? topics.trim().split('\n').filter(Boolean) : [];
+  const maxTopics = parseInt(panelCount, 10);
+  const isFormInvalid = Object.keys(errors).length > 0;
 
   const renderInputContent = () => {
     const errorClass = errors.content ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent';
     const baseClass = 'w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition';
     const finalClass = `${baseClass} ${errorClass}`;
 
-    const errorElement = errors.content ? <p id="content-error" className="text-red-400 text-sm mt-1">{errors.content}</p> : null;
+    const errorElement = errors.content ? <p id="content-error" className="text-red-400 text-sm mt-1" role="alert">{errors.content}</p> : null;
 
     const commonProps = {
         value: content,
         onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => handleContentChange(e.target.value),
         className: finalClass,
+        name: "content",
         'aria-invalid': !!errors.content,
         'aria-describedby': errors.content ? "content-error" : undefined,
     };
@@ -175,14 +193,14 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
         </div>;
       case InputType.JSON:
         return <div>
-            <textarea {...commonProps} placeholder={compactInputPlaceholder} rows={8} className={`${finalClass} font-mono text-sm`} />
+            <textarea {...commonProps} placeholder={`{\n  "topic": "Beispiel GmbH",\n  "geo": { "city": "Berlin" },\n  "bullets": ["Punkt 1", "Punkt 2"]\n}`} rows={8} className={`${finalClass} font-mono text-sm`} />
             {errorElement}
         </div>;
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" noValidate>
        <div className="text-center -mt-2 mb-6">
           <button 
             type="button" 
@@ -225,13 +243,13 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <input type="text" name="companyName" value={geo.companyName} onChange={handleGeoChange} placeholder="Firma / Unternehmensname" aria-invalid={!!errors.companyName} aria-describedby={errors.companyName ? "companyName-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${errors.companyName ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
-            {errors.companyName && <p id="companyName-error" className="text-red-400 text-sm mt-1">{errors.companyName}</p>}
+            {errors.companyName && <p id="companyName-error" className="text-red-400 text-sm mt-1" role="alert">{errors.companyName}</p>}
           </div>
           <input type="text" name="branch" value={geo.branch} onChange={handleGeoChange} placeholder="Branche (z.B. Webdesign)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <input type="text" name="street" value={geo.street} onChange={handleGeoChange} placeholder="Straße & Hausnummer" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <div>
             <input type="text" name="city" value={geo.city} onChange={handleGeoChange} placeholder="Stadt (z.B. Hamburg)" aria-invalid={!!errors.city} aria-describedby={errors.city ? "city-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${errors.city ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
-            {errors.city && <p id="city-error" className="text-red-400 text-sm mt-1">{errors.city}</p>}
+            {errors.city && <p id="city-error" className="text-red-400 text-sm mt-1" role="alert">{errors.city}</p>}
           </div>
           <input type="text" name="zip" value={geo.zip} onChange={handleGeoChange} placeholder="PLZ (z.B. 20095)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <input type="text" name="region" value={geo.region} onChange={handleGeoChange} placeholder="Landkreis / Region" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
@@ -281,6 +299,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
             <label htmlFor="panelCount" className="block text-lg font-semibold mb-3">5. Anzahl der Sektionen</label>
             <select 
               id="panelCount" 
+              name="panelCount"
               value={panelCount} 
               onChange={e => setPanelCount(e.target.value as PanelCount)} 
               className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition"
@@ -296,6 +315,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
             <label htmlFor="contentDepth" className="block text-lg font-semibold mb-3">6. Detailgrad</label>
             <select 
               id="contentDepth" 
+              name="contentDepth"
               value={contentDepth} 
               onChange={e => setContentDepth(e.target.value as ContentDepth)} 
               className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition"
@@ -312,24 +332,25 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
           <div className="relative">
               <textarea 
                 id="topics"
+                name="topics"
                 value={topics} 
                 onChange={e => setTopics(e.target.value)} 
                 placeholder="Ein Thema pro Zeile. Fehlende Themen werden automatisch ergänzt." 
                 rows={4} 
-                className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${topicsError ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`}
-                aria-describedby="topics-helper"
-                aria-invalid={topicsError}
+                className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${errors.topics ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`}
+                aria-describedby="topics-helper topics-error"
+                aria-invalid={!!errors.topics}
               />
-              <span id="topics-helper" className={`absolute bottom-2 right-2 text-xs font-mono px-2 py-1 rounded ${topicsError ? 'bg-red-900/80 text-red-200' : 'bg-brand-primary text-brand-text-secondary'}`}>
+              <span id="topics-helper" className={`absolute bottom-2 right-2 text-xs font-mono px-2 py-1 rounded ${!!errors.topics ? 'bg-red-900/80 text-red-200' : 'bg-brand-primary text-brand-text-secondary'}`}>
                 {topicList.length}/{maxTopics}
               </span>
           </div>
-           {topicsError && <p className="text-red-400 text-sm mt-2">Die Anzahl der Themen darf die gewählte Anzahl Sektionen nicht überschreiten.</p>}
+           {errors.topics && <p id="topics-error" className="text-red-400 text-sm mt-2" role="alert">{errors.topics}</p>}
       </div>
 
       <div>
         <label htmlFor="tone" className="block text-lg font-semibold mb-3">8. Tonfall</label>
-        <select id="tone" value={tone} onChange={e => setTone(e.target.value as Tone)} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition">
+        <select id="tone" name="tone" value={tone} onChange={e => setTone(e.target.value as Tone)} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition">
           {Object.values(Tone).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
         </select>
       </div>
@@ -343,9 +364,9 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
             <span className="text-sm text-brand-text-secondary">Design vom letzten Job übernehmen</span>
         </div>
         <div className="text-center">
-            <button type="submit" disabled={isLoading} className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors duration-300 shadow-lg transform hover:scale-105">
+            <button type="submit" disabled={isLoading || isFormInvalid} className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover disabled:bg-gray-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors duration-300 shadow-lg transform hover:scale-105">
               <IconGenerate className="w-5 h-5 mr-2"/>
-              {isLoading ? 'Job läuft...' : 'Generierung starten'}
+              {isLoading ? 'Job läuft...' : (isFormInvalid ? 'Bitte Fehler korrigieren' : 'Generierung starten')}
             </button>
         </div>
       </div>
