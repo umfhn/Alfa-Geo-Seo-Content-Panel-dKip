@@ -1,5 +1,8 @@
+
+
 import React from 'react';
-import type { PanelResult } from '../types';
+// FIX: Add QualityScoreBreakdown to imports for type-safe key iteration.
+import type { PanelResult, QualityScoreBreakdown, QualityScoreBreakdownValue } from '../types';
 import { IconShieldCheck, IconLock } from './Icons';
 
 interface ExplainabilityCardProps {
@@ -34,27 +37,20 @@ const QualityScoreBreakdown: React.FC<{ breakdown: PanelResult['linting_results'
 
     return (
         <div className="space-y-2">
-            {Object.entries(breakdown).map(([key, value]) => {
-                // The value of an optional property can be undefined.
-                if (!value) {
-                    return null;
-                }
-
-                // FIX: The value from Object.entries can be inferred as 'unknown' or a wide union.
-                // We cast it to its known type to access its properties safely.
-                const breakdownValue = value as { score: number; weight: number };
-
+            {/* FIX: Use a specific key type `keyof QualityScoreBreakdown` to fix the indexing error. */}
+            {(Object.keys(breakdown) as Array<keyof QualityScoreBreakdown>).map((key) => {
+                const value = breakdown[key];
                 return (
                     <div key={key} className="text-sm">
                         <div className="flex justify-between items-center mb-1">
                             <span className="text-brand-text-secondary">{labels[key] || key}</span>
-                            <span className="font-semibold">{breakdownValue.score}/100</span>
+                            <span className="font-semibold">{value.score}/100</span>
                         </div>
                         <div className="w-full bg-brand-primary rounded-full h-2">
                             <div
                                 className="bg-brand-accent h-2 rounded-full"
-                                style={{ width: `${breakdownValue.score}%` }}
-                                title={`Gewichtung: ${breakdownValue.weight * 100}%`}
+                                style={{ width: `${value.score}%` }}
+                                title={`Gewichtung: ${value.weight * 100}%`}
                             ></div>
                         </div>
                     </div>

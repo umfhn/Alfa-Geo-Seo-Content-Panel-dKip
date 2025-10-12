@@ -2,16 +2,21 @@
 import type { FormState } from './validationService';
 import type { Warning } from '../types';
 
-const URL_REGEX = /https?:\/\/[^\s/$.?#].[^\s]*|mailto:[^\s@]+@[^\s@]+\.[^\s@]+|tel:\+?[0-9\s-()]+/i;
+const URL_REGEX = /\b(?:https?:\/\/|mailto:|tel:)/i;
 const BOOSTER_WORDS = ["sehr", "extrem", "unglaublich", "weltweit führend", "state of the art"];
-const BOOSTER_REGEX = new RegExp(`\\b(${BOOSTER_WORDS.join('|')})\\b`, 'gi');
+const BOOSTER_REGEX = new RegExp(`\\b(${BOOSTER_WORDS.join('|')})\\b`, 'giu');
 
-// Normalization for duplicate checking
-const normalizeForDuplicates = (s: string): string =>
+/**
+ * Normalizes a key fact string for robust duplicate checking.
+ * It trims, lowercases, collapses whitespace, and removes trailing punctuation.
+ * @param s The string to normalize.
+ * @returns The normalized string.
+ */
+const normalizeKeyFact = (s: string): string =>
   s.trim()
    .toLowerCase()
    .replace(/\s+/g, ' ')
-   .replace(/[.,!?;:]+$/, ''); // remove trailing punctuation
+   .replace(/[.,!?;:„“”"]+$/, ''); // remove trailing punctuation including various quotes
 
 /**
  * Lints the GEO text fields for stylistic and qualitative issues.
@@ -34,6 +39,8 @@ export function lintGeoText(formState: FormState): Warning[] {
 
   // Rule 2: Booster/filler words
   if (geo.topAnswer && BOOSTER_REGEX.test(geo.topAnswer)) {
+    // Reset regex state to avoid issues with global flag
+    BOOSTER_REGEX.lastIndex = 0;
     // Avoid duplicate warnings for the same field
     if (!warnings.some(w => w.path === 'geo.topAnswer' && w.code === 'BOOSTER_WORDS')) {
         warnings.push({
@@ -46,6 +53,7 @@ export function lintGeoText(formState: FormState): Warning[] {
 
   (geo.keyFacts || []).forEach((fact, index) => {
     if (fact && BOOSTER_REGEX.test(fact)) {
+      BOOSTER_REGEX.lastIndex = 0; // Reset regex state
       warnings.push({
         path: `geo.keyFacts[${index}]`,
         code: 'BOOSTER_WORDS',
@@ -58,7 +66,7 @@ export function lintGeoText(formState: FormState): Warning[] {
   const seenFacts = new Map<string, number>();
   (geo.keyFacts || []).forEach((fact, index) => {
     if (!fact) return;
-    const normalized = normalizeForDuplicates(fact);
+    const normalized = normalizeKeyFact(fact);
     if (normalized) {
       if (seenFacts.has(normalized)) {
         // Mark the current one as a duplicate

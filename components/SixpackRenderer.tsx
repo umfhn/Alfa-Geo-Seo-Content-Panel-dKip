@@ -1,13 +1,17 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import type { Job, CIColors, Panel, SectionLabels, ExportProfile, PanelResult, LintIssue, SeoData, Warning } from '../types';
+import type { Job, CIColors, Panel, SectionLabels, ExportProfile, PanelResult, LintIssue, SeoData, Warning, ValidationError } from '../types';
 import AccordionPanel from './AccordionPanel';
 import { AddPanelModal } from './AddPanelModal';
 import { PanelPlaceholder } from './PanelPlaceholder';
 import { ExplainabilityCard } from './ExplainabilityCard';
+import { ErrorSummary } from './ErrorSummary';
+import { StructuredDataPreview } from './StructuredDataPreview';
 import { IconJson, IconCopy, IconDownload, IconInfo, IconCss, IconEdit, IconShieldCheck, IconMonitor, IconTablet, IconPhone, IconArrowUp, IconArrowDown, IconPlusCircle, IconTrash } from './Icons';
 import { generateExportBundle, ExportBundle, generateSeoData, generateOnePageHtml } from '../services/exportService';
 import { defaultCIColors, designPresets, getContrastRatio, getWcagRating } from '../services/exportService';
 import { buildValidationReport, downloadJson } from '../services/reportService';
+import { validateJsonLd } from '../services/validationService';
+import { buildFaqJsonLd, buildHowToJsonLd } from '../services/structuredData';
 import { t } from '../i18n';
 
 // --- Start of in-file component: DesignPresetModal ---
@@ -186,11 +190,28 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [seoData, setSeoData] = useState<SeoData | null>(null);
-  const [isJsonLdVisible, setIsJsonLdVisible] = useState(false);
   const [isSeoLoading, setIsSeoLoading] = useState(false);
   
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const draggedPanelIndex = useRef<number | null>(null);
+
+  // --- New JSON-LD Logic ---
+  const jsonLdErrors = useMemo(() => validateJsonLd(job), [job]);
+  const isJsonLdValid = jsonLdErrors.length === 0;
+
+  const faqJsonLd = useMemo(() => {
+    if (job.userInput.toggles?.generateFaqJsonLd) {
+        return buildFaqJsonLd(job.results.panels);
+    }
+    return null;
+  }, [job]);
+
+  const howToJsonLd = useMemo(() => {
+    if (job.userInput.toggles?.generateHowToJsonLd) {
+        return buildHowToJsonLd(job.results.panels, job.results.topic || '');
+    }
+    return null;
+  }, [job]);
 
 
   const { results } = job;
@@ -315,9 +336,11 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
   }, [exportSelection, successfulPanels, getPanelStatus]);
 
   const isLinterOk = exportStatus.status === 'OK' || exportStatus.status === 'WARN';
-  const isExportAllowed = isLinterOk && isFormValid;
+  const isExportAllowed = isLinterOk && isFormValid && isJsonLdValid;
   const exportDisabledTitle = !isFormValid 
     ? t('gate.blocked')
+    : !isJsonLdValid
+    ? t('gate.jsonld.blocked')
     : !isLinterOk 
     ? "Export gesperrt: Bitte Linter-Probleme beheben." 
     : undefined;
@@ -461,6 +484,9 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
     if (!isFormValid) {
         return <div className="p-3 rounded-lg bg-red-900/50 border border-red-700 text-red-200 text-sm"><strong className="font-bold">Export gesperrt.</strong> Bitte beheben Sie die Fehler im Eingabeformular (oben auf der Seite).</div>;
     }
+    if (!isJsonLdValid) {
+        return <div className="p-3 rounded-lg bg-red-900/50 border border-red-700 text-red-200 text-sm"><strong className="font-bold">Export gesperrt.</strong> {t('gate.jsonld.blocked')}</div>;
+    }
     switch (exportStatus.status) {
         case 'OK':
             return <div className="flex justify-end items-center"><span className="text-xs font-bold uppercase px-2 py-1 rounded bg-green-500/20 text-green-300">Linter: OK</span></div>;
@@ -538,6 +564,8 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
         <h2 className="text-3xl font-bold text-brand-text">Inhalt für: {topic}</h2>
         <p className="text-brand-text-secondary">{geo.branch && `${geo.branch} | `}{geo.street && `${geo.street}, `}{geo.zip} {geo.city} {geo.region && `(${geo.region})`}</p>
       </div>
+      
+      <ErrorSummary errors={jsonLdErrors} warnings={[]} firstErrorId={null} />
 
       <div id="design-section" className="bg-brand-secondary rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-4">
@@ -600,18 +628,7 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
                         </label>
                         <textarea id="seo-description" name="description" value={seoData.description} onChange={handleSeoChange} maxLength={155} rows={3} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
                     </div>
-                     <div>
-                        <div className="flex justify-between items-center">
-                            <label className="text-sm font-medium text-brand-text-secondary">Generiertes JSON-LD</label>
-                            <div className="flex items-center space-x-2">
-                                <button onClick={() => handleCopy(seoData.jsonLd, 'JSON-LD kopiert!')} className="p-1.5 rounded-full text-brand-text-secondary hover:bg-brand-primary transition-colors" title="JSON-LD kopieren"><IconCopy className="w-4 h-4" /></button>
-                                <button onClick={() => setIsJsonLdVisible(!isJsonLdVisible)} className="p-1.5 rounded-full text-brand-text-secondary hover:bg-brand-primary transition-colors" title="Anzeigen/Verbergen"><IconJson className="w-4 h-4" /></button>
-                            </div>
-                        </div>
-                        {isJsonLdVisible && (
-                             <pre className="bg-brand-primary p-4 mt-2 rounded-lg text-xs text-brand-text-secondary overflow-x-auto"><code>{seoData.jsonLd || 'Keine strukturierten Daten generiert.'}</code></pre>
-                        )}
-                    </div>
+                     <StructuredDataPreview faqJson={isJsonLdValid ? faqJsonLd : null} howToJson={isJsonLdValid ? howToJsonLd : null} />
                 </div>
               ) : <p className="mt-4 text-sm text-brand-text-secondary">SEO-Daten werden nach Abschluss des Jobs generiert...</p>}
           </details>
@@ -713,6 +730,11 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
                 <strong className="font-bold">Export gesperrt.</strong> {t('gate.blocked')}
               </div>
             )}
+             {!isJsonLdValid && (
+              <div className="p-3 mb-4 rounded-lg bg-red-900/50 border border-red-700 text-red-200 text-sm">
+                <strong className="font-bold">Export gesperrt.</strong> {t('gate.jsonld.blocked')}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button onClick={() => handleOnePageExport({ includeCss: true, forWp: false })} disabled={!isExportAllowed} aria-disabled={!isExportAllowed} title={exportDisabledTitle} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-accent text-white font-bold rounded-lg hover:bg-brand-accent-hover transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
                   <IconDownload className="w-5 h-5 mr-2" /> HTML (mit CSS)
@@ -795,7 +817,7 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
 
        {activeExplainabilityPanel && ( <ExplainabilityCard panelResult={activeExplainabilityPanel} onClose={() => setActiveExplainabilityPanelIndex(null)} /> )}
       {toast && (
-          <div aria-live="polite" className={`fixed bottom-5 right-5 max-w-sm w-full p-4 rounded-lg shadow-lg text-white z-50 ${ toast.type === 'success' ? 'bg-green-600' : toast.type === 'warning' ? 'bg-yellow-600' : 'bg-red-600' }`}>
+          <div aria-live="polite" className={`fixed bottom-5 right-5 max-w-sm w-full p-4 rounded-lg shadow-lg text-white z-50 ${ toast.type === 'success' ? 'bg-green-600' : toast.type === 'warning' ? 'bg-red-600' : 'bg-red-600' }`}>
             <div className="flex items-start">
               <div className="flex-1">
                 <p className="text-sm font-semibold">{toast.type === 'success' && 'Erfolgreich'} {toast.type === 'warning' && 'Warnung'} {toast.type === 'error' && 'Fehler'}</p>

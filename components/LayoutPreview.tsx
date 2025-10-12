@@ -1,7 +1,7 @@
+
+
 import React from 'react';
-// FIX: Move ButtonPosition from a type-only import to a value import, as it is an enum used at runtime.
-import type { LayoutConfig } from '../types';
-import { ButtonVariant, ButtonPosition } from '../types';
+import { type LayoutConfig, ButtonVariant, ButtonPosition } from '../types';
 
 interface LayoutPreviewProps {
   config: LayoutConfig;
@@ -221,4 +221,4 @@ const previewStyles = `
   color: var(--dkip-layout-text);
   opacity: 0.7;
 }
-`;
+`

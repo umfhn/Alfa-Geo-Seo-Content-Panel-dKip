@@ -1,3 +1,5 @@
+
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import type { PanelResult, CIColors, SectionLabels, PanelSegmentsLockState, Job } from '../types';
 import { IconPlay, IconPause, IconStop, IconEdit, IconClipboardList, IconShieldCheck, IconRefresh, IconLock, IconUnlock, IconDownload, IconGripVertical } from './Icons';
@@ -256,9 +258,7 @@ const AccordionPanel: React.FC<AccordionPanelProps> = ({
                     {regenOptions.map(opt => (
                         <button
                             key={opt.key}
-                            // FIX: Cast opt.key to string to satisfy the handler's signature.
-                            // The key is from `keyof PanelSegmentsLockState` which is always a string.
-                            onClick={() => handleRegenOptionClick(opt.key as string)}
+                            onClick={() => handleRegenOptionClick(opt.key)}
                             disabled={segment_locks?.[opt.key]}
                             title={segment_locks?.[opt.key] ? 'Segment gesperrt (manuell bearbeitet)' : `Nur '${opt.label}' neu generieren`}
                             className="block w-full text-left px-4 py-2 text-sm text-brand-text hover:bg-brand-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"

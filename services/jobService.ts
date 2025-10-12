@@ -1,3 +1,5 @@
+
+
 import type { UserInput, Job, JobStep, PanelResult, HealthReport, Panel, LintingResults, Geo, QualityScoreBreakdownValue } from '../types';
 import { designPresets } from './exportService';
 import { generateSinglePanelLive, runAIPing } from './geminiService';
@@ -165,8 +167,7 @@ const runJob = async (jobId: string) => {
                 linting_results = createDummyLintingResults(panel);
             }
 
-            // FIX: Add explicit types for reduce callback parameters to resolve type errors.
-            const quality_score = Math.round(Object.values(linting_results.quality_score_breakdown || {}).reduce((acc: number, curr: QualityScoreBreakdownValue) => acc + curr.score * curr.weight, 0));
+            const quality_score = Math.round(Object.values(linting_results.quality_score_breakdown || {}).reduce((acc, curr) => acc + curr.score * curr.weight, 0));
             
             job.results.panels[i] = {
                 index: i, status: 'ok', panel, topic: topics[i] || mainTopic, angle: 'Leistungen',
@@ -223,7 +224,7 @@ export const startJob = async (input: UserInput): Promise<{ jobId: string }> => 
         results: {
             geo: input.geo,
             media: input.media,
-            panels: Array.from({ length: panelCount }, (_, i) => ({ index: i, status: 'pending', topic: '', angle: '' })),
+            panels: Array.from({ length: panelCount }, (_, i) => ({ index: i, status: 'pending', topic: '', angle: '' } as PanelResult)),
             ci_colors: input.keepDesign && previousJob?.results.ci_colors ? previousJob.results.ci_colors : undefined,
             section_labels: input.keepDesign && previousJob?.results.section_labels ? previousJob.results.section_labels : { summary: 'Überblick', sections: 'Inhalte', faq: 'Häufige Fragen', keywords: 'Stichwörter' }
         },

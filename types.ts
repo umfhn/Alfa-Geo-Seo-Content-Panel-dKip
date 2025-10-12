@@ -1,18 +1,18 @@
 // types.ts
 
-// --- Enums and string literal types ---
+// --- Basic Enums & Types for User Input ---
 
 export enum InputType {
-  URL = 'url',
-  TEXT = 'text',
-  JSON = 'json',
+  TEXT = 'Text',
+  URL = 'URL',
+  JSON = 'JSON',
 }
 
 export enum Tone {
   NEUTRAL = 'neutral',
   WERBLICH = 'werblich',
   FACHLICH = 'fachlich',
-  FREUNDSCHAFTLICH = 'freundschaftlich',
+  FREUNDLICH = 'freundlich',
 }
 
 export enum PanelCount {
@@ -29,109 +29,45 @@ export enum ContentDepth {
   DETAILED = 'detailliert',
 }
 
-export type ExportProfile = 
-  | 'gutenberg' 
-  | 'classic_inline' 
-  | 'classic_split' 
-  | 'raw_html' 
-  | 'onepage_html_full' 
-  | 'onepage_html_no_css' 
-  | 'wp_gutenberg_html';
-
-export type HealthStatus = 'green' | 'yellow' | 'red' | 'neutral';
-
-// --- i18n specific types ---
-
-export type I18nKey =
-  | 'val.required'
-  | 'val.slugInvalid'
-  | 'val.companyNameLength'
-  | 'val.topicsMax'
-  | 'val.contentRequired'
-  | 'sum.heading.one'
-  | 'sum.heading.other'
-  | 'sum.headingWithWarnings.oneError.oneWarning'
-  | 'sum.headingWithWarnings.oneError.otherWarnings'
-  | 'sum.headingWithWarnings.otherErrors.oneWarning'
-  | 'sum.headingWithWarnings.otherErrors.otherWarnings'
-  | 'sum.headingWarningsOnly.one'
-  | 'sum.headingWarningsOnly.other'
-  | 'sum.warningsIntro'
-  | 'sum.pleaseCorrect'
-  | 'sum.firstBtn'
-  | 'gate.blocked'
-  | 'gate.fixErrors'
-  | 'report.download'
-  | 'form.startGeneration'
-  | 'form.jobRunning'
-  | 'lbl.geo.topAnswer'
-  | 'lbl.geo.keyFacts'
-  | 'lbl.text.synopsis'
-  | 'lbl.text.body'
-  | 'lbl.text.cta'
-  | 'val.len.min'
-  | 'val.len.max'
-  | 'val.array.minmax'
-  | 'warn.noLinksInShort'
-  | 'warn.boosterWords'
-  | 'warn.duplicateKeyFact'
-  | 'warn.ctaInBody';
-
-
-export interface ValidationError {
-  path: string;
-  message: I18nKey;
-  params?: { [key: string]: string | number };
-}
-
-export interface Warning {
-  path: string;
-  code: string;
-  messageKey: I18nKey;
-  params?: { [key: string]: string | number };
-}
-
-// --- Core Data Structures ---
-
 export interface Geo {
   companyName: string;
-  city: string;
-  region: string;
-  zip: string;
   branch: string;
   street: string;
-  slug?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  topAnswer?: string;
-  keyFacts?: string[];
-}
-
-export interface HeroMedia {
-  avif1280: string;
-  avif1920: string;
-  webp1280: string;
-  webp1920: string;
-  jpg: string;
-  alt: string;
-  headline: string;
-  subtitle: string;
-  ctaUrl: string;
+  city: string;
+  zip: string;
+  region: string;
+  slug: string;
+  phone: string;
+  email: string;
+  website: string;
+  topAnswer: string;
+  keyFacts: string[];
 }
 
 export interface GalleryMediaItem {
-  id: string; // for React key
-  thumb: string;
-  full: string;
-  alt: string;
-  caption: string;
+    id: string;
+    thumb: string;
+    full: string;
+    alt: string;
+    caption: string;
+}
+
+export interface HeroMedia {
+    avif1280: string;
+    avif1920: string;
+    webp1280: string;
+    webp1920: string;
+    jpg: string;
+    alt: string;
+    headline: string;
+    subtitle: string;
+    ctaUrl: string;
 }
 
 export interface JobMedia {
-  hero: HeroMedia;
-  gallery: GalleryMediaItem[];
-  logoUrl?: string;
+    hero: HeroMedia;
+    gallery: GalleryMediaItem[];
+    logoUrl: string;
 }
 
 export interface UserInput {
@@ -144,21 +80,23 @@ export interface UserInput {
   keepDesign: boolean;
   topics?: string[];
   outputFormat: 'onepage' | 'legacy';
-  media?: JobMedia;
-  toggles?: { 
-    faq?: boolean; 
-    howto?: boolean; 
-    article?: boolean; 
-    localBusiness?: boolean 
+  media: JobMedia;
+  toggles?: {
+    generateFaqJsonLd?: boolean;
+    generateHowToJsonLd?: boolean;
+    [key: string]: boolean | undefined;
   };
 }
 
-export interface PanelSection {
+
+// --- AI Generated Content Panel Structure ---
+
+export interface Section {
   title: string;
   bullets: string[];
 }
 
-export interface PanelFAQ {
+export interface Faq {
   q: string;
   a: string;
 }
@@ -166,13 +104,50 @@ export interface PanelFAQ {
 export interface Panel {
   slug: string;
   title: string;
-  kind: 'accordion';
+  kind: 'accordion' | 'other';
   summary: string;
-  sections: PanelSection[];
-  faqs: PanelFAQ[];
+  sections: Section[];
+  faqs: Faq[];
   keywords: string[];
-  sources: any[]; // Define more strictly if needed
+  sources: any[];
   payloadHash: string;
+}
+
+// --- Job & Result Management ---
+
+export interface JobStep {
+    kind: 'profiling' | 'ci_colors' | 'panel' | 'panel_segment' | 'finalizing';
+    description: string;
+    index?: number;
+    of?: number;
+    segment?: string;
+}
+
+export interface PanelSegmentsLockState {
+    title?: boolean;
+    summary?: boolean;
+    sections?: boolean;
+    faq?: boolean;
+    keywords?: boolean;
+}
+
+export interface PanelResult {
+    index: number;
+    status: 'pending' | 'ok' | 'failed' | 'skipped';
+    panel?: Panel;
+    topic: string;
+    angle: string;
+    error?: string;
+    quality_score?: number;
+    is_locked?: boolean;
+    segment_locks?: PanelSegmentsLockState;
+    linting_results: LintingResults;
+    explainability?: {
+      source_info: string;
+      extracted_geo: Geo;
+      duration_ms: number;
+      payload_hash: string;
+    };
 }
 
 export interface CIColors {
@@ -188,25 +163,57 @@ export interface CIColors {
 }
 
 export interface SectionLabels {
-  summary: string;
-  sections: string;
-  faq: string;
-  keywords: string;
+    summary: string;
+    sections: string;
+    faq: string;
+    keywords: string;
 }
 
-export interface PanelSegmentsLockState {
-    title: boolean;
-    summary: boolean;
-    sections: boolean;
-    faq: boolean;
-    keywords: boolean;
+export interface SeoData {
+    title: string;
+    description: string;
+    jsonLd: string;
+    canonical?: string;
 }
 
-export interface Explainability {
-    source_info: string;
-    extracted_geo: Geo;
-    duration_ms: number;
-    payload_hash: string;
+export interface JobResults {
+    topic?: string;
+    geo: Geo;
+    media: JobMedia;
+    panels: PanelResult[];
+    ci_colors?: CIColors;
+    section_labels: SectionLabels;
+    meta?: SeoData;
+    set_hash?: string;
+    lintSummary?: LintIssue[];
+}
+
+export interface JobError {
+    code: string;
+    message: string;
+    atStep: string;
+}
+
+export interface Job {
+    jobId: string;
+    state: 'queued' | 'running' | 'paused' | 'done' | 'error';
+    progress: number;
+    step: JobStep;
+    userInput: UserInput;
+    results: JobResults;
+    lastError: JobError | null;
+    timestamps: {
+        created: string;
+        updated: string;
+    };
+}
+
+// --- Linter & Validation ---
+
+export interface LintIssue {
+    code: string;
+    severity: 'ERROR' | 'WARN';
+    message: string;
 }
 
 export interface QualityScoreBreakdownValue {
@@ -222,12 +229,6 @@ export interface QualityScoreBreakdown {
     keywords: QualityScoreBreakdownValue;
 }
 
-export interface LintIssue {
-    code: string;
-    message: string;
-    severity: 'ERROR' | 'WARN';
-}
-
 export interface LintingResults {
     passed: boolean;
     has_warnings: boolean;
@@ -237,83 +238,22 @@ export interface LintingResults {
     quality_score_breakdown?: QualityScoreBreakdown;
 }
 
-export interface PanelResult {
-  index: number;
-  status: 'pending' | 'ok' | 'failed' | 'skipped';
-  panel?: Panel;
-  topic: string;
-  angle: string;
-  quality_score?: number;
-  is_locked?: boolean;
-  segment_locks?: Partial<PanelSegmentsLockState>;
-  linting_results?: LintingResults;
-  explainability?: Explainability;
-  error?: string;
+export interface ValidationError {
+  path: string;
+  message: string;
+  params?: { [key: string]: string | number };
 }
 
-export interface JobStep {
-    kind: string;
-    description: string;
-    index?: number;
-    of?: number;
-    segment?: string;
+export interface Warning {
+  path: string;
+  code: string;
+  messageKey: string;
+  params?: { [key: string]: string | number };
 }
 
-export interface JobError {
-    code: string;
-    message: string;
-    atStep: string;
-}
+// --- Export & Misc ---
 
-export interface JobResults {
-    geo?: Geo;
-    topic?: string;
-    panels: PanelResult[];
-    ci_colors?: CIColors;
-    section_labels?: SectionLabels;
-    meta?: Meta;
-    lintSummary?: LintIssue[];
-    set_hash?: string;
-    media?: JobMedia;
-}
-
-export interface Job {
-  jobId: string;
-  state: 'queued' | 'running' | 'paused' | 'done' | 'error';
-  progress: number;
-  step: JobStep;
-  userInput: UserInput;
-  results: JobResults;
-  lastError: JobError | null;
-  timestamps: {
-    created: string;
-    updated: string;
-
-  };
-}
-
-export interface Sixpack {
-  type: 'sixpack';
-  format: '1x1';
-  topic: string;
-  geo: Geo;
-  panels: Panel[];
-  meta?: Meta;
-  ci_colors?: CIColors;
-}
-
-export interface Meta {
-    companyName?: string;
-    street?: string;
-    representatives?: string[];
-    phone?: string;
-    fax?: string;
-    email?: string;
-    taxId?: string;
-    website?: string;
-    title?: string;
-    description?: string;
-}
+export type ExportProfile = 'gutenberg' | 'classic_inline' | 'classic_split' | 'raw_html';
 
 export interface VCardData {
     company: string;
@@ -327,33 +267,39 @@ export interface VCardData {
     zip: string;
 }
 
-export interface SeoData {
-    title: string;
-    description: string;
-    jsonLd: string;
-    canonical: string;
+export interface Meta {
+    companyName?: string;
+    street?: string;
+    representatives?: string[];
+    phone?: string;
+    fax?: string;
+    email?: string;
+    taxId?: string;
+    website?: string;
 }
 
+export interface Sixpack extends Job {} // Sixpack seems to be an alias for Job
 
-// --- System Check specific types ---
+// --- Health Check ---
+export type HealthStatus = 'green' | 'yellow' | 'red' | 'neutral';
 
 export interface HealthCheckResult {
-  ok: boolean;
-  status: HealthStatus;
-  latency_ms?: number;
-  message: string;
-  source?: 'live' | 'mock';
-  unresolved?: string[];
-  duplicates?: string[];
-  remaining?: number;
-  quota?: number;
+    ok: boolean;
+    status: HealthStatus;
+    message: string;
+    latency_ms?: number;
+    source?: 'live' | 'mock';
+    unresolved?: string[];
+    duplicates?: string[];
+    remaining?: number;
+    quota?: number;
 }
 
 export interface RunHistory {
   id: string;
   panels: number;
-  tone: Tone;
-  detail: ContentDepth;
+  tone: string;
+  detail: string;
   timestamp: string;
 }
 
@@ -366,46 +312,26 @@ export interface SystemInfo {
 }
 
 export interface HealthReport {
-  timestamp: string;
-  status: HealthStatus;
-  summary: string;
-  checks: {
-    backend: HealthCheckResult;
-    mini_prompt: HealthCheckResult;
-    placeholders: HealthCheckResult;
-    keywords: HealthCheckResult;
-    rate_limit: HealthCheckResult;
-    runs: RunHistory[];
-    system: SystemInfo;
-  };
+    timestamp: string;
+    status: HealthStatus;
+    summary: string;
+    checks: {
+        backend: HealthCheckResult;
+        mini_prompt: HealthCheckResult;
+        placeholders: HealthCheckResult;
+        keywords: HealthCheckResult;
+        rate_limit: HealthCheckResult;
+        runs: RunHistory[];
+        system: SystemInfo;
+    };
 }
 
-// --- Layout Module specific types ---
 
-export enum FrameVariant {
-    F1 = 'F1', // Standard
-    F2 = 'F2', // Header-focus
-    F3 = 'F3', // Footer-focus
-}
-
-export enum ContentVariant {
-    L1 = 'L1', // Stack
-    L2 = 'L2', // Split
-    L3 = 'L3', // Grid
-    L4 = 'L4', // Accordion
-}
-
-export enum ButtonVariant {
-    PRIMARY = 'primary',
-    SECONDARY = 'secondary',
-    GHOST = 'ghost',
-}
-
-export enum ButtonPosition {
-    HEADER = 'header',
-    CONTENT = 'content',
-    FOOTER = 'footer',
-}
+// --- Layout Module Types ---
+export enum FrameVariant { F1 = 'F1', F2 = 'F2', F3 = 'F3' }
+export enum ContentVariant { L1 = 'L1', L2 = 'L2', L3 = 'L3', L4 = 'L4' }
+export enum ButtonVariant { PRIMARY = 'primary', SECONDARY = 'secondary', GHOST = 'ghost' }
+export enum ButtonPosition { HEADER = 'header', CONTENT = 'content', FOOTER = 'footer' }
 
 export interface LayoutTokens {
   gap_px: number;
@@ -434,17 +360,29 @@ export interface LayoutConfig {
   buttons: LayoutButton[];
 }
 
+
+// --- Validation Service ---
+export interface FormState {
+    content: string;
+    geo: Geo;
+    topics: string;
+    panelCount: PanelCount;
+}
+
+// --- Report Service ---
 export interface ValidationReport {
-  schemaVersion: string;
-  appVersion: string;
-  timestamp: string;
-  counts: { errors: number; warnings: number };
-  page: { title?: string; slug?: string; sectionCount: number };
-  toggles?: { 
-    faq?: boolean; 
-    howto?: boolean; 
-    article?: boolean; 
-    localBusiness?: boolean 
-  };
-  warnings?: Array<{ path: string; code: string; }>;
+    schemaVersion: string;
+    appVersion: string;
+    timestamp: string;
+    counts: {
+        errors: number;
+        warnings: number;
+    };
+    page: {
+        title: string;
+        slug: string;
+        sectionCount: number;
+    };
+    toggles?: { [key: string]: boolean };
+    warnings?: { path: string; code: string }[];
 }

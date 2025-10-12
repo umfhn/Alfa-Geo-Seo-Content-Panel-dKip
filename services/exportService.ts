@@ -1,4 +1,6 @@
-import type { Panel, CIColors, Geo, SectionLabels, ExportProfile, Job, SeoData } from '../types';
+
+
+import type { Panel, CIColors, Geo, SectionLabels, ExportProfile, Job, SeoData, Faq } from '../types';
 import { generateSeoMetadataFromContent } from './geminiService';
 
 // --- HSL/Contrast Utility Functions ---

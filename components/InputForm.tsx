@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import type { UserInput, Geo, JobMedia, GalleryMediaItem, Warning } from '../types';
+// FIX: Added missing ValidationError type import
+import type { UserInput, Geo, JobMedia, GalleryMediaItem, Warning, ValidationError } from '../types';
 import { InputType, Tone, PanelCount, ContentDepth } from '../types';
 import { IconGenerate, IconSparkles, IconPlusCircle, IconTrash } from './Icons';
 import { useValidation } from '../hooks/useValidation';
-// FIX: The ValidationError type is not directly used in this component; it's inferred from the useValidation hook.
 import type { FormState } from '../services/validationService';
 import { ErrorSummary } from './ErrorSummary';
 import { toId } from '../services/fieldPath';
@@ -33,6 +33,10 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
   const [topics, setTopics] = useState<string>('');
   const [outputFormat, setOutputFormat] = useState<'onepage' | 'legacy'>('onepage');
   const [media, setMedia] = useState<JobMedia>(initialMediaState);
+  const [jsonLdToggles, setJsonLdToggles] = useState({
+      generateFaqJsonLd: false,
+      generateHowToJsonLd: false,
+  });
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -64,8 +68,8 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
     }
     
     const finalTopics = topics.trim() ? topics.trim().split('\n').filter(Boolean) : undefined;
-    onGenerate({ inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics: finalTopics, outputFormat, media });
-  }, [onGenerate, validateNow, inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics, outputFormat, media]);
+    onGenerate({ inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics: finalTopics, outputFormat, media, toggles: jsonLdToggles });
+  }, [onGenerate, validateNow, inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics, outputFormat, media, jsonLdToggles]);
   
   const handleFillWithDummyData = useCallback(() => {
     setInputType(InputType.TEXT);
@@ -466,6 +470,30 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
           {Object.values(Tone).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
         </select>
       </div>
+
+      <details className="bg-brand-primary/50 p-4 rounded-lg group">
+          <summary className="text-lg font-semibold list-none cursor-pointer flex justify-between items-center">
+              Strukturierte Daten (JSON-LD)
+              <span className="text-brand-accent group-open:rotate-90 transition-transform">&#10148;</span>
+          </summary>
+          <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                  <span className="text-sm text-brand-text-secondary">{t('jsonld.toggle.faq')}</span>
+                  <label htmlFor="toggle-faq-jsonld" className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="toggle-faq-jsonld" className="sr-only peer" checked={jsonLdToggles.generateFaqJsonLd} onChange={() => setJsonLdToggles(prev => ({...prev, generateFaqJsonLd: !prev.generateFaqJsonLd}))} />
+                      <div className="w-11 h-6 bg-brand-primary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-accent"></div>
+                  </label>
+              </div>
+              <div className="flex items-center justify-between">
+                  <span className="text-sm text-brand-text-secondary">{t('jsonld.toggle.howto')}</span>
+                   <label htmlFor="toggle-howto-jsonld" className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="toggle-howto-jsonld" className="sr-only peer" checked={jsonLdToggles.generateHowToJsonLd} onChange={() => setJsonLdToggles(prev => ({...prev, generateHowToJsonLd: !prev.generateHowToJsonLd}))} />
+                      <div className="w-11 h-6 bg-brand-primary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-accent"></div>
+                  </label>
+              </div>
+               <p className="text-xs text-brand-text-secondary/70 pt-2">{t('jsonld.description')}</p>
+          </div>
+      </details>
 
       <div className="pt-4 space-y-4">
          <div className="flex items-center justify-center space-x-3">
