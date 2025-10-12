@@ -33,6 +33,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
   const [topics, setTopics] = useState<string>('');
   const [outputFormat, setOutputFormat] = useState<'onepage' | 'legacy'>('onepage');
   const [media, setMedia] = useState<JobMedia>(initialMediaState);
+  const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
 
 
   const topicList = topics.trim() ? topics.trim().split('\n').filter(Boolean) : [];
@@ -41,19 +42,29 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !geo.companyName.trim() || !geo.city.trim()) {
-      alert("Bitte füllen Sie mindestens Inhalt, Firma und Stadt aus.");
-      return;
+
+    // --- PRE-CHECK VALIDATION ---
+    const newErrors: { [key: string]: string | null } = {};
+    if (!content.trim()) newErrors.content = "Eine Beschreibung, URL oder JSON ist erforderlich.";
+    if (!geo.companyName.trim()) newErrors.companyName = "Der Firmenname ist ein Pflichtfeld.";
+    if (!geo.city.trim()) newErrors.city = "Die Stadt ist ein Pflichtfeld.";
+
+    if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
     }
+    setErrors({}); // Clear errors on successful submission start
+    
     const finalTopics = topics.trim() ? topicList : undefined;
     if (topicsError) {
-        alert(`Sie können maximal ${panelCount} Themen angeben. Sie haben ${topicList.length}.`);
+        setErrors(prev => ({...prev, topics: `Sie können maximal ${panelCount} Themen angeben. Sie haben ${topicList.length}.`}));
         return;
     }
     onGenerate({ inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics: finalTopics, outputFormat, media });
   }, [onGenerate, inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics, topicList, topicsError, outputFormat, media]);
   
   const handleFillWithDummyData = useCallback(() => {
+    setErrors({}); // Clear any validation errors
     setInputType(InputType.TEXT);
     setContent(
       "Grünwalds Gartenzauber ist ein führender Garten- und Landschaftsbau-Betrieb in Musterstadt, Bayern. Seit 2005 gestalten wir private Gärten und öffentliche Grünanlagen. Unser Team aus erfahrenen Gärtnern und Landschaftsarchitekten bietet alles aus einer Hand: von der Planung über die Bepflanzung bis zur regelmäßigen Pflege, inklusive Teichbau und Baumschnitt. Wir legen Wert auf nachhaltige Materialien und heimische Pflanzen."
@@ -95,7 +106,18 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
   }, []);
 
   const handleGeoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGeo(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setGeo(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+  
+  const handleContentChange = (value: string) => {
+    setContent(value);
+    if (errors.content) {
+        setErrors(prev => ({ ...prev, content: null }));
+    }
   };
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,13 +148,36 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
   };
 
   const renderInputContent = () => {
+    const errorClass = errors.content ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent';
+    const baseClass = 'w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition';
+    const finalClass = `${baseClass} ${errorClass}`;
+
+    const errorElement = errors.content ? <p id="content-error" className="text-red-400 text-sm mt-1">{errors.content}</p> : null;
+
+    const commonProps = {
+        value: content,
+        onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => handleContentChange(e.target.value),
+        className: finalClass,
+        'aria-invalid': !!errors.content,
+        'aria-describedby': errors.content ? "content-error" : undefined,
+    };
+
     switch (inputType) {
       case InputType.URL:
-        return <input type="url" value={content} onChange={e => setContent(e.target.value)} placeholder="https://beispiel-unternehmen.de" className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />;
+        return <div>
+            <input type="url" {...commonProps} placeholder="https://beispiel-unternehmen.de" />
+            {errorElement}
+        </div>;
       case InputType.TEXT:
-        return <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Beschreiben Sie hier Ihr Unternehmen, Ihre Leistungen und Vorteile..." rows={6} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />;
+        return <div>
+            <textarea {...commonProps} placeholder="Beschreiben Sie hier Ihr Unternehmen, Ihre Leistungen und Vorteile..." rows={6} />
+            {errorElement}
+        </div>;
       case InputType.JSON:
-        return <textarea value={content} onChange={e => setContent(e.target.value)} placeholder={compactInputPlaceholder} rows={8} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 font-mono text-sm focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />;
+        return <div>
+            <textarea {...commonProps} placeholder={compactInputPlaceholder} rows={8} className={`${finalClass} font-mono text-sm`} />
+            {errorElement}
+        </div>;
     }
   };
 
@@ -154,7 +199,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
         <label className="block text-lg font-semibold mb-3">1. Input-Quelle wählen</label>
         <div className="flex space-x-2 bg-brand-primary p-1 rounded-lg">
           {(Object.values(InputType)).map(type => (
-            <button key={type} type="button" onClick={() => { setInputType(type); setContent(''); }} className={`w-full py-2 px-4 rounded-md text-sm font-medium transition ${inputType === type ? 'bg-brand-accent text-white shadow' : 'text-brand-text-secondary hover:bg-brand-secondary'}`}>
+            <button key={type} type="button" onClick={() => { setInputType(type); handleContentChange(''); }} className={`w-full py-2 px-4 rounded-md text-sm font-medium transition ${inputType === type ? 'bg-brand-accent text-white shadow' : 'text-brand-text-secondary hover:bg-brand-secondary'}`}>
               {type.toUpperCase()}
             </button>
           ))}
@@ -178,10 +223,16 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading }) =
       <div>
         <label className="block text-lg font-semibold mb-3">3. GEO-Metadaten</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <input type="text" name="companyName" value={geo.companyName} onChange={handleGeoChange} placeholder="Firma / Unternehmensname" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+          <div>
+            <input type="text" name="companyName" value={geo.companyName} onChange={handleGeoChange} placeholder="Firma / Unternehmensname" aria-invalid={!!errors.companyName} aria-describedby={errors.companyName ? "companyName-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${errors.companyName ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
+            {errors.companyName && <p id="companyName-error" className="text-red-400 text-sm mt-1">{errors.companyName}</p>}
+          </div>
           <input type="text" name="branch" value={geo.branch} onChange={handleGeoChange} placeholder="Branche (z.B. Webdesign)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <input type="text" name="street" value={geo.street} onChange={handleGeoChange} placeholder="Straße & Hausnummer" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-          <input type="text" name="city" value={geo.city} onChange={handleGeoChange} placeholder="Stadt (z.B. Hamburg)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+          <div>
+            <input type="text" name="city" value={geo.city} onChange={handleGeoChange} placeholder="Stadt (z.B. Hamburg)" aria-invalid={!!errors.city} aria-describedby={errors.city ? "city-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${errors.city ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
+            {errors.city && <p id="city-error" className="text-red-400 text-sm mt-1">{errors.city}</p>}
+          </div>
           <input type="text" name="zip" value={geo.zip} onChange={handleGeoChange} placeholder="PLZ (z.B. 20095)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <input type="text" name="region" value={geo.region} onChange={handleGeoChange} placeholder="Landkreis / Region" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <input type="tel" name="phone" value={geo.phone} onChange={handleGeoChange} placeholder="Telefonnummer" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />

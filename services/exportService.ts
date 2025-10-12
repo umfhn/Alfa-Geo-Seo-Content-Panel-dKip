@@ -395,18 +395,13 @@ const onePageTemplate = `<!DOCTYPE html>
         <div class="gallery" aria-label="Referenzen Galerie">
           __GALLERY_ITEMS__
         </div>
-      </section>
 
-      <aside class="aside">
-        <h3>Mehr zum Thema</h3>
-        <ul id="topic-links"></ul>
-        <hr />
-        <div>
-          <h4>Kontakt</h4>
+        <div class="contact-box">
+          <h3>Kontakt</h3>
           <p>__PHONE__ · <a href="mailto:__EMAIL__">__EMAIL__</a></p>
-          <p><a href="__WEBSITE__">Unverbindlich anfragen</a></p>
+          <p><a href="__WEBSITE__" class="btn">Unverbindlich anfragen</a></p>
         </div>
-      </aside>
+      </section>
     </main>
 
     <footer>
@@ -518,13 +513,14 @@ body { font-family: var(--dkip-font-family); background: var(--dkip-secondary); 
 header, nav, footer { background: rgba(255,255,255,0.03); border: 1px solid rgba(96,165,250,0.4); padding: 16px; border-radius: 12px; margin-bottom: 8px; }
 header .brand { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 header .subtitle { font-size: 0.9rem; color: var(--dkip-text-secondary); }
-main { display: flex; flex-wrap: wrap; background: rgba(0,0,0,0.08); min-height: 600px; box-sizing: border-box; border-radius: 12px; }
-.article { flex: 2 1 700px; padding: 24px; min-width: 300px; border-right: 1px solid rgba(255,255,255,0.08); }
-.aside { flex: 1 1 280px; padding: 24px; min-width: 240px; }
-@media (max-width: 900px) {
-  main { flex-direction: column; }
-  .article, .aside { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
-}
+main { display: block; background: rgba(0,0,0,0.08); min-height: 600px; box-sizing: border-box; border-radius: 12px; }
+.article { padding: 24px; }
+.contact-box { margin-top: 2.5rem; padding: 2rem; border-radius: var(--dkip-border-radius); background: rgba(0,0,0,0.2); text-align: center; border-top: 1px solid var(--dkip-accent); }
+.contact-box h3 { font-size: 1.5rem; margin-top: 0; margin-bottom: 1rem; color: var(--dkip-text-primary); }
+.contact-box p { margin-bottom: 1.5rem; }
+.contact-box p:last-child { margin-bottom: 0; }
+.contact-box a { color: var(--dkip-accent); text-decoration: none; }
+.contact-box .btn { color: #fff; }
 [data-dkip-scope], [data-dkip-scope] * { box-sizing: border-box; }
 .toc-list { margin: 0; padding-left: 1.25rem; }
 .toc-list a { color: var(--dkip-accent); text-decoration: none; }
