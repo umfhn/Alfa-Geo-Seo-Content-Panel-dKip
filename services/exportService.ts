@@ -39,18 +39,20 @@ export const getWcagRating = (ratio: number): { level: 'AAA' | 'AA' | 'Fail', co
 };
 
 // --- Design Presets & Default ---
-const BASE_FONT_SIZES = {
+const BASE_STYLES = {
   fontSizeTitle: 24,
   fontSizeAccordionTitle: 16,
   fontSizeContent: 14,
-  scrollbarPosition: 'right' as const
+  scrollbarPosition: 'right' as const,
+  radius_px: 8,
+  blur_px: 0,
 };
 
 export const designPresets: { name: string; colors: CIColors }[] = [
     {
         name: 'Slate Blue (Corporate)',
         colors: {
-            ...BASE_FONT_SIZES,
+            ...BASE_STYLES,
             primary: '#2D6CDF',
             secondary: '#0F172A',
             accent: '#60A5FA',
@@ -61,7 +63,7 @@ export const designPresets: { name: string; colors: CIColors }[] = [
     {
         name: 'Neutral Dark',
         colors: {
-            ...BASE_FONT_SIZES,
+            ...BASE_STYLES,
             primary: '#3B82F6',
             secondary: '#0F172A',
             accent: '#22D3EE',

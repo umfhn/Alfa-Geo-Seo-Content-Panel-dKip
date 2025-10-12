@@ -1,8 +1,5 @@
 import type { UserInput, ValidationReport, Warning } from '../types';
-
-const SCHEMA_VERSION = "0.1";
-// In a real Vite project, this would be: import.meta.env.VITE_APP_VERSION || 'dev'
-const APP_VERSION = "0.3.0"; 
+import { SCHEMA_VERSION, APP_VERSION } from './config';
 
 /**
  * Builds a validation report object.

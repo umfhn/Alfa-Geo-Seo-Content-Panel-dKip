@@ -33,5 +33,15 @@
   "val.jsonld.howto.missing": "JSON-LD for HowTo enabled, but fewer than 2 valid steps (title & text) were found.",
   "jsonld.embed.toggle": "Embed JSON-LD in page",
   "jsonld.embed.description": "Injects the data as a <script> tag into the page's <head>.",
-  "jsonld.tooLarge": "Warning: The size of the {type} schema exceeds 100KB and might impact page load time."
+  "jsonld.tooLarge": "Warning: The size of the {type} schema exceeds 100KB and might impact page load time.",
+  "labels.export.dkipCli": "dKip-CLI JSON",
+  "labels.export.acf": "ACF JSON",
+  "hints.export.mappingV1": "Mapping v1 – Foundation for Import/ACF",
+  "autosave.found": "Saved draft found.",
+  "autosave.restore": "Restore",
+  "autosave.discard": "Discard",
+  "autosave.savedAt": "Automatically saved: {time}",
+  "autosave.tooLarge": "Draft is too large (> 1MB) and cannot be saved automatically.",
+  "autosave.incompatible": "Draft from an incompatible version found. Restore at your own risk.",
+  "autosave.incompatible.restoreAnyway": "Restore anyway"
 }

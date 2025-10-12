@@ -8,6 +8,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { SystemCheckPanel } from './components/SystemCheckPanel';
 import { LayoutModule } from './components/LayoutModule';
 import { startJob, getJobStatus, controlJob, getTopicSuggestions, initJobFromStorage, clearPersistedJob } from './services/jobService';
+import { clearDraft } from './services/persistence';
 import type { UserInput, Job, Warning } from './types';
 import { FLAGS } from './flags';
 import { initI18n } from './i18n';
@@ -24,7 +25,8 @@ const App: React.FC = () => {
   const [validationState, setValidationState] = useState<{ isValid: boolean; errorCount: number; warnCount: number; warnings: Warning[] }>({ isValid: true, errorCount: 0, warnCount: 0, warnings: [] });
   
   const handleGenerate = async (input: UserInput) => {
-    clearPersistedJob();
+    clearPersistedJob(); // Clear old session-based job persistence
+    clearDraft(input.geo.slug); // Clear new localStorage draft
     const { jobId } = await startJob(input);
     const newJob = await getJobStatus(jobId);
     setJob(newJob);

@@ -160,6 +160,8 @@ export interface CIColors {
   fontSizeAccordionTitle: number;
   fontSizeContent: number;
   scrollbarPosition: 'left' | 'right';
+  radius_px: number;
+  blur_px: number;
 }
 
 export interface SectionLabels {
@@ -385,4 +387,126 @@ export interface ValidationReport {
     };
     toggles?: { [key: string]: boolean };
     warnings?: { path: string; code: string }[];
+}
+
+
+// --- dKip CLI Exporter Types ---
+export interface DkipCliTheme {
+  surface: string;
+  text: string;
+  accent: string;
+  radius: number;
+  blur: number;
+}
+
+export interface DkipCliPage {
+  title: string;
+  slug: string;
+  locale: string;
+  theme: DkipCliTheme;
+}
+
+export interface DkipCliDockItem {
+  label: string;
+  href: string;
+  icon: 'phone' | 'mail' | 'share' | 'map';
+}
+
+export type DkipCliSection =
+  | { id: string; type: 'Hero'; title: string; subtitle: string; mediaUrl: string; }
+  | { id: string; type: 'FAQ'; faqs: Array<{ question: string; answer: string; }>; }
+  | { id: string; type: 'HowTo'; steps: Array<{ name: string; text: string; }>; }
+  | { id: string; type: 'HTML'; html: string; trusted: true; }
+  | { id: string; type: 'Media'; url: string; alt: string; }
+  | { id: string; type: 'Downloads'; files: Array<{ label: string; url: string; }>; }
+  | { id: string; type: 'Accordion'; items: Array<{ title: string; content: string; }>; };
+
+export interface DkipCliJson {
+  page: DkipCliPage;
+  dock: DkipCliDockItem[];
+  sections: DkipCliSection[];
+}
+
+
+// --- ACF JSON Exporter Types ---
+export interface AcfSubField {
+  key: string;
+  label: string;
+  name: string;
+  type: string;
+  instructions?: string;
+  required?: number;
+  conditional_logic?: number;
+  wrapper?: { width: string; class: string; id: string; };
+  sub_fields?: AcfSubField[];
+  [key: string]: any;
+}
+
+export interface AcfLayout {
+  key: string;
+  name: string;
+  label: string;
+  display: string;
+  sub_fields: AcfSubField[];
+  min: string;
+  max: string;
+}
+
+export interface AcfField {
+  key: string;
+  label: string;
+  name: string;
+  type: string;
+  instructions: string;
+  required: number;
+  conditional_logic: number;
+  wrapper: { width: string; class: string; id: string; };
+  layouts?: AcfLayout[];
+  button_label?: string;
+  min?: string;
+  max?: string;
+}
+
+export interface AcfFieldGroup {
+  key: string;
+  title: string;
+  fields: AcfField[];
+  location: [Array<{ param: string; operator: string; value: string; }>];
+  menu_order: number;
+  position: string;
+  style: string;
+  label_placement: string;
+  instruction_placement: string;
+  hide_on_screen: string[];
+  active: boolean;
+  description: string;
+}
+
+export interface AcfExport {
+    field_groups: AcfFieldGroup[];
+}
+
+// --- Autosave Draft Types ---
+export interface FormDraftData {
+  inputType: InputType;
+  content: string;
+  geo: Geo;
+  tone: Tone;
+  panelCount: PanelCount;
+  contentDepth: ContentDepth;
+  keepDesign: boolean;
+  topics: string;
+  outputFormat: 'onepage' | 'legacy';
+  media: JobMedia;
+  jsonLdToggles: {
+      generateFaqJsonLd: boolean;
+      generateHowToJsonLd: boolean;
+  };
+}
+
+export interface FormDraft {
+    formData: FormDraftData;
+    timestamp: number;
+    appVersion: string;
+    schemaVersion: string;
 }

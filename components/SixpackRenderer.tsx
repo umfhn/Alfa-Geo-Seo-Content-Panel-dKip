@@ -12,6 +12,8 @@ import { defaultCIColors, designPresets, getContrastRatio, getWcagRating } from 
 import { buildValidationReport, downloadJson } from '../services/reportService';
 import { validateJsonLd } from '../services/validationService';
 import { buildFaqJsonLd, buildHowToJsonLd } from '../services/structuredData';
+import { buildDkipCliJson } from '../services/exporters/dkipCli';
+import { buildAcfJson } from '../services/exporters/acf';
 import { t } from '../i18n';
 
 // --- Start of in-file component: DesignPresetModal ---
@@ -436,6 +438,20 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
     setToast({ message: 'Validierungs-Report wird heruntergeladen.', type: 'success' });
     }, [job, validationState, setToast]);
 
+    const handleDownloadDkipCli = useCallback(() => {
+      if (!isExportAllowed) { setToast({ message: exportDisabledTitle || 'Export zurzeit nicht möglich.', type: 'warning' }); return; }
+      const cliJson = buildDkipCliJson(job);
+      downloadJson('dkip-cli.json', cliJson);
+      setToast({ message: 'dKip-CLI JSON wird heruntergeladen.', type: 'success' });
+    }, [job, isExportAllowed, exportDisabledTitle]);
+
+    const handleDownloadAcfJson = useCallback(() => {
+      if (!isExportAllowed) { setToast({ message: exportDisabledTitle || 'Export zurzeit nicht möglich.', type: 'warning' }); return; }
+      const acfJson = buildAcfJson();
+      downloadJson('acf.json', acfJson);
+      setToast({ message: 'ACF-Stub JSON wird heruntergeladen.', type: 'success' });
+    }, [isExportAllowed, exportDisabledTitle]);
+
   const handleDragStart = (e: React.DragEvent, index: number) => {
     draggedPanelIndex.current = index;
     e.dataTransfer.setData('text/plain', index.toString());
@@ -802,6 +818,19 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
             </div>
           </div>
         )}
+        <div id="developer-export-section" className="mt-8 pt-6 border-t border-brand-accent/20">
+            <h3 className="text-xl font-bold">Developer &amp; CLI Exporte</h3>
+            <p className="text-sm text-brand-text-secondary/80 mb-4" title={t('hints.export.mappingV1')}>{t('hints.export.mappingV1')}</p>
+            {renderExportBanner()}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <button onClick={handleDownloadDkipCli} disabled={!isExportAllowed} aria-disabled={!isExportAllowed} title={exportDisabledTitle || t('labels.export.dkipCli')} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-secondary text-brand-text font-bold rounded-lg hover:bg-brand-primary transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
+                    <IconDownload className="w-5 h-5 mr-2" /> {t('labels.export.dkipCli')}
+                </button>
+                <button onClick={handleDownloadAcfJson} disabled={!isExportAllowed} aria-disabled={!isExportAllowed} title={exportDisabledTitle || t('labels.export.acf')} className="w-full inline-flex items-center justify-center px-6 py-3 bg-brand-secondary text-brand-text font-bold rounded-lg hover:bg-brand-primary transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
+                    <IconDownload className="w-5 h-5 mr-2" /> {t('labels.export.acf')}
+                </button>
+            </div>
+        </div>
       </div>
 
       <div id="json-section" className="bg-brand-secondary rounded-xl shadow-lg p-6">

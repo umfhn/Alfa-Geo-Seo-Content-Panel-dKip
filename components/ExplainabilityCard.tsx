@@ -24,7 +24,8 @@ const CheckListItem: React.FC<{ label: string, passed: boolean, details?: string
     </li>
 );
 
-const QualityScoreBreakdown: React.FC<{ breakdown: PanelResult['linting_results']['quality_score_breakdown'] }> = ({ breakdown }) => {
+// FIX: Renamed component to avoid name collision with the imported type.
+const QualityScoreBreakdownComponent: React.FC<{ breakdown: PanelResult['linting_results']['quality_score_breakdown'] }> = ({ breakdown }) => {
     if (!breakdown || Object.keys(breakdown).length === 0) return null;
 
     const labels: { [key: string]: string } = {
@@ -112,7 +113,7 @@ export const ExplainabilityCard: React.FC<ExplainabilityCardProps> = ({ panelRes
                                         <span className="text-4xl font-bold">{panelResult.quality_score || 0}</span>
                                     </div>
                                     <div className="flex-1">
-                                       <QualityScoreBreakdown breakdown={linting_results.quality_score_breakdown} />
+                                       <QualityScoreBreakdownComponent breakdown={linting_results.quality_score_breakdown} />
                                     </div>
                                 </div>
                             </div>

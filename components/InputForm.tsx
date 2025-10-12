@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-// FIX: Added missing ValidationError type import
-import type { UserInput, Geo, JobMedia, GalleryMediaItem, Warning, ValidationError } from '../types';
+import type { UserInput, Geo, JobMedia, GalleryMediaItem, Warning, ValidationError, FormDraftData } from '../types';
 import { InputType, Tone, PanelCount, ContentDepth } from '../types';
 import { IconGenerate, IconSparkles, IconPlusCircle, IconTrash } from './Icons';
 import { useValidation } from '../hooks/useValidation';
@@ -9,6 +8,8 @@ import { ErrorSummary } from './ErrorSummary';
 import { toId } from '../services/fieldPath';
 import { focusAndScrollTo } from '../services/domFocus';
 import { t } from '../i18n';
+import { useAutosave } from '../hooks/useAutosave';
+import { RestoreBanner } from './RestoreBanner';
 
 interface InputFormProps {
   onGenerate: (input: UserInput) => void;
@@ -22,31 +23,44 @@ const initialMediaState: JobMedia = {
     logoUrl: ''
 };
 
+const initialFormState: FormDraftData = {
+    inputType: InputType.TEXT,
+    content: '',
+    geo: { companyName: '', city: '', region: '', zip: '', branch: '', street: '', slug: '', phone: '', email: '', website: '', topAnswer: '', keyFacts: [''] },
+    tone: Tone.NEUTRAL,
+    panelCount: PanelCount.SIX,
+    contentDepth: ContentDepth.STANDARD,
+    keepDesign: false,
+    topics: '',
+    outputFormat: 'onepage',
+    media: initialMediaState,
+    jsonLdToggles: {
+        generateFaqJsonLd: false,
+        generateHowToJsonLd: false,
+    },
+};
+
 export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onValidationChange }) => {
-  const [inputType, setInputType] = useState<InputType>(InputType.TEXT);
-  const [content, setContent] = useState<string>('');
-  const [geo, setGeo] = useState<Geo>({ companyName: '', city: '', region: '', zip: '', branch: '', street: '', slug: '', phone: '', email: '', website: '', topAnswer: '', keyFacts: [''] });
-  const [tone, setTone] = useState<Tone>(Tone.NEUTRAL);
-  const [panelCount, setPanelCount] = useState<PanelCount>(PanelCount.SIX);
-  const [contentDepth, setContentDepth] = useState<ContentDepth>(ContentDepth.STANDARD);
-  const [keepDesign, setKeepDesign] = useState<boolean>(false);
-  const [topics, setTopics] = useState<string>('');
-  const [outputFormat, setOutputFormat] = useState<'onepage' | 'legacy'>('onepage');
-  const [media, setMedia] = useState<JobMedia>(initialMediaState);
-  const [jsonLdToggles, setJsonLdToggles] = useState({
-      generateFaqJsonLd: false,
-      generateHowToJsonLd: false,
-  });
-
+  const [formState, setFormState] = useState<FormDraftData>(initialFormState);
   const formRef = useRef<HTMLFormElement>(null);
+  
+  // --- Autosave Hook ---
+  const { status: draftStatus, restore, discard, lastSavedTime, draft } = useAutosave(formState, formState.geo.slug);
 
-  // --- New Validation Hook ---
+  const handleRestore = useCallback(() => {
+    const restoredData = restore();
+    if (restoredData) {
+        setFormState(restoredData);
+    }
+  }, [restore]);
+  
+  // --- Validation Hook ---
   const formStateForValidation = useMemo<FormState>(() => ({
-    content,
-    geo,
-    topics,
-    panelCount,
-  }), [content, geo, topics, panelCount]);
+    content: formState.content,
+    geo: formState.geo,
+    topics: formState.topics,
+    panelCount: formState.panelCount,
+  }), [formState.content, formState.geo, formState.topics, formState.panelCount]);
 
   const { errors, warnings, errorsByPath, validateNow, isValid, errorCount, warnCount, firstErrorId } = useValidation(formStateForValidation);
 
@@ -55,7 +69,6 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
       onValidationChange({ isValid, errorCount, warnCount, warnings });
     }
   }, [isValid, errorCount, warnCount, warnings, onValidationChange]);
-
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -67,113 +80,135 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
         return;
     }
     
-    const finalTopics = topics.trim() ? topics.trim().split('\n').filter(Boolean) : undefined;
-    onGenerate({ inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics: finalTopics, outputFormat, media, toggles: jsonLdToggles });
-  }, [onGenerate, validateNow, inputType, content, geo, tone, panelCount, contentDepth, keepDesign, topics, outputFormat, media, jsonLdToggles]);
+    const finalTopics = formState.topics.trim() ? formState.topics.trim().split('\n').filter(Boolean) : undefined;
+    
+    // Create UserInput object from formState
+    const userInput: UserInput = {
+        inputType: formState.inputType,
+        content: formState.content,
+        geo: formState.geo,
+        tone: formState.tone,
+        panelCount: formState.panelCount,
+        contentDepth: formState.contentDepth,
+        keepDesign: formState.keepDesign,
+        topics: finalTopics,
+        outputFormat: formState.outputFormat,
+        media: formState.media,
+        toggles: formState.jsonLdToggles,
+    };
+    
+    onGenerate(userInput);
+  }, [onGenerate, validateNow, formState]);
   
   const handleFillWithDummyData = useCallback(() => {
-    setInputType(InputType.TEXT);
-    setContent(
-      "Grünwalds Gartenzauber ist ein führender Garten- und Landschaftsbau-Betrieb in Musterstadt, Bayern. Seit 2005 gestalten wir private Gärten und öffentliche Grünanlagen. Unser Team aus erfahrenen Gärtnern und Landschaftsarchitekten bietet alles aus einer Hand: von der Planung über die Bepflanzung bis zur regelmäßigen Pflege, inklusive Teichbau und Baumschnitt. Wir legen Wert auf nachhaltige Materialien und heimische Pflanzen."
-    );
-    setGeo({
-      companyName: "Grünwalds Gartenzauber",
-      branch: "Garten- und Landschaftsbau",
-      street: "Ahornweg 12",
-      city: "Musterstadt",
-      zip: "12345",
-      region: "Bayern",
-      slug: "gruenwalds-gartenzauber-musterstadt",
-      phone: "0123 456789",
-      email: "info@gruenwalds-gartenzauber.de",
-      website: "https://www.gruenwalds-gartenzauber.de",
-      topAnswer: "Grünwalds Gartenzauber ist der führende Experte für Garten- und Landschaftsbau in Musterstadt, Bayern. Seit über 15 Jahren verwandeln wir Gärten in grüne Oasen. Unser Leistungsspektrum umfasst die komplette Gartengestaltung, professionelle Baumpflege, nachhaltigen Teichbau und die regelmäßige Pflege von Grünanlagen für private und gewerbliche Kunden.",
-      keyFacts: [
-        "Über 15 Jahre Erfahrung in der Gestaltung und Pflege von Gärten in der Region Musterstadt.",
-        "Team aus zertifizierten Landschaftsarchitekten und Gärtnermeistern garantiert höchste Qualität.",
-        "Fokus auf heimische Pflanzen und nachhaltige Materialien für langlebige, ökologische Gärten.",
-        "Kostenlose Erstberatung vor Ort inklusive einer detaillierten und transparenten Angebotserstellung."
-      ]
-    });
-    setMedia({
-        hero: {
-            avif1280: 'https://placehold.co/1280x427/228B22/FFFFFF/avif?text=Hero-Banner',
-            avif1920: 'https://placehold.co/1920x640/228B22/FFFFFF/avif?text=Hero-Banner',
-            webp1280: 'https://placehold.co/1280x427/228B22/FFFFFF/webp?text=Hero-Banner',
-            webp1920: 'https://placehold.co/1920x640/228B22/FFFFFF/webp?text=Hero-Banner',
-            jpg: 'https://placehold.co/1920x640/228B22/FFFFFF/jpeg?text=Hero-Banner',
-            alt: 'Ein wunderschöner, von Grünwalds Gartenzauber gestalteter Garten',
-            headline: 'Willkommen bei Grünwalds Gartenzauber',
-            subtitle: 'Ihr Experte für Traumgärten in Musterstadt und Umgebung.',
-            ctaUrl: '#kontakt',
+    setFormState({
+        inputType: InputType.TEXT,
+        content: "Grünwalds Gartenzauber ist ein führender Garten- und Landschaftsbau-Betrieb in Musterstadt, Bayern. Seit 2005 gestalten wir private Gärten und öffentliche Grünanlagen. Unser Team aus erfahrenen Gärtnern und Landschaftsarchitekten bietet alles aus einer Hand: von der Planung über die Bepflanzung bis zur regelmäßigen Pflege, inklusive Teichbau und Baumschnitt. Wir legen Wert auf nachhaltige Materialien und heimische Pflanzen.",
+        geo: {
+            companyName: "Grünwalds Gartenzauber",
+            branch: "Garten- und Landschaftsbau",
+            street: "Ahornweg 12",
+            city: "Musterstadt",
+            zip: "12345",
+            region: "Bayern",
+            slug: "gruenwalds-gartenzauber-musterstadt",
+            phone: "0123 456789",
+            email: "info@gruenwalds-gartenzauber.de",
+            website: "https://www.gruenwalds-gartenzauber.de",
+            topAnswer: "Grünwalds Gartenzauber ist der führende Experte für Garten- und Landschaftsbau in Musterstadt, Bayern. Seit über 15 Jahren verwandeln wir Gärten in grüne Oasen. Unser Leistungsspektrum umfasst die komplette Gartengestaltung, professionelle Baumpflege, nachhaltigen Teichbau und die regelmäßige Pflege von Grünanlagen für private und gewerbliche Kunden.",
+            keyFacts: [
+                "Über 15 Jahre Erfahrung in der Gestaltung und Pflege von Gärten in der Region Musterstadt.",
+                "Team aus zertifizierten Landschaftsarchitekten und Gärtnermeistern garantiert höchste Qualität.",
+                "Fokus auf heimische Pflanzen und nachhaltige Materialien für langlebige, ökologische Gärten.",
+                "Kostenlose Erstberatung vor Ort inklusive einer detaillierten und transparenten Angebotserstellung."
+            ]
         },
-        gallery: [
-            { id: 'gal1', thumb: 'https://placehold.co/400x400/228B22/FFFFFF/jpeg?text=Projekt+1', full: 'https://placehold.co/800x600/228B22/FFFFFF/jpeg?text=Projekt+1', alt: 'Gartenprojekt 1', caption: 'Moderner Stadtgarten' },
-            { id: 'gal2', thumb: 'https://placehold.co/400x400/228B22/FFFFFF/jpeg?text=Projekt+2', full: 'https://placehold.co/800x600/228B22/FFFFFF/jpeg?text=Projekt+2', alt: 'Gartenprojekt 2', caption: 'Ländlicher Teich' },
-            { id: 'gal3', thumb: 'https://placehold.co/400x400/228B22/FFFFFF/jpeg?text=Projekt+3', full: 'https://placehold.co/800x600/228B22/FFFFFF/jpeg?text=Projekt+3', alt: 'Gartenprojekt 3', caption: 'Professioneller Baumschnitt' },
-        ],
-        logoUrl: 'https://placehold.co/150x50/FFFFFF/228B22/png?text=Logo'
+        media: {
+            hero: {
+                avif1280: 'https://placehold.co/1280x427/228B22/FFFFFF/avif?text=Hero-Banner',
+                avif1920: 'https://placehold.co/1920x640/228B22/FFFFFF/avif?text=Hero-Banner',
+                webp1280: 'https://placehold.co/1280x427/228B22/FFFFFF/webp?text=Hero-Banner',
+                webp1920: 'https://placehold.co/1920x640/228B22/FFFFFF/webp?text=Hero-Banner',
+                jpg: 'https://placehold.co/1920x640/228B22/FFFFFF/jpeg?text=Hero-Banner',
+                alt: 'Ein wunderschöner, von Grünwalds Gartenzauber gestalteter Garten',
+                headline: 'Willkommen bei Grünwalds Gartenzauber',
+                subtitle: 'Ihr Experte für Traumgärten in Musterstadt und Umgebung.',
+                ctaUrl: '#kontakt',
+            },
+            gallery: [
+                { id: 'gal1', thumb: 'https://placehold.co/400x400/228B22/FFFFFF/jpeg?text=Projekt+1', full: 'https://placehold.co/800x600/228B22/FFFFFF/jpeg?text=Projekt+1', alt: 'Gartenprojekt 1', caption: 'Moderner Stadtgarten' },
+                { id: 'gal2', thumb: 'https://placehold.co/400x400/228B22/FFFFFF/jpeg?text=Projekt+2', full: 'https://placehold.co/800x600/228B22/FFFFFF/jpeg?text=Projekt+2', alt: 'Gartenprojekt 2', caption: 'Ländlicher Teich' },
+                { id: 'gal3', thumb: 'https://placehold.co/400x400/228B22/FFFFFF/jpeg?text=Projekt+3', full: 'https://placehold.co/800x600/228B22/FFFFFF/jpeg?text=Projekt+3', alt: 'Gartenprojekt 3', caption: 'Professioneller Baumschnitt' },
+            ],
+            logoUrl: 'https://placehold.co/150x50/FFFFFF/228B22/png?text=Logo'
+        },
+        tone: Tone.WERBLICH,
+        panelCount: PanelCount.SIX,
+        contentDepth: ContentDepth.STANDARD,
+        outputFormat: 'onepage',
+        topics: '',
+        keepDesign: false,
+        jsonLdToggles: { generateFaqJsonLd: false, generateHowToJsonLd: false }
     });
-    setTone(Tone.WERBLICH);
-    setPanelCount(PanelCount.SIX);
-    setContentDepth(ContentDepth.STANDARD);
-    setOutputFormat('onepage');
   }, []);
+
+  const handleFieldChange = (field: keyof FormDraftData, value: any) => {
+    setFormState(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleGeoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setGeo(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleContentChange = (value: string) => {
-    setContent(value);
+    setFormState(prev => ({ ...prev, geo: { ...prev.geo, [name]: value } }));
   };
 
   const handleKeyFactChange = (index: number, value: string) => {
-    setGeo(prev => {
-        const newKeyFacts = [...(prev.keyFacts || [])];
+    setFormState(prev => {
+        const newKeyFacts = [...(prev.geo.keyFacts || [])];
         newKeyFacts[index] = value;
-        return { ...prev, keyFacts: newKeyFacts };
+        return { ...prev, geo: { ...prev.geo, keyFacts: newKeyFacts } };
     });
   };
 
   const addKeyFact = () => {
-      setGeo(prev => ({ ...prev, keyFacts: [...(prev.keyFacts || []), ''] }));
+      setFormState(prev => ({ ...prev, geo: { ...prev.geo, keyFacts: [...(prev.geo.keyFacts || []), ''] } }));
   };
 
   const removeKeyFact = (index: number) => {
-      setGeo(prev => ({ ...prev, keyFacts: (prev.keyFacts || []).filter((_, i) => i !== index) }));
+      setFormState(prev => ({ ...prev, geo: { ...prev.geo, keyFacts: (prev.geo.keyFacts || []).filter((_, i) => i !== index) } }));
   };
-
+  
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const [category, field] = name.split('.');
     if (category === 'hero') {
-        setMedia(prev => ({ ...prev, hero: { ...prev.hero, [field]: value }}));
+        setFormState(prev => ({ ...prev, media: { ...prev.media, hero: { ...prev.media.hero, [field]: value } } }));
     } else {
-        setMedia(prev => ({ ...prev, [name]: value }));
+        setFormState(prev => ({ ...prev, media: { ...prev.media, [name]: value } }));
     }
   };
   
   const handleGalleryChange = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
-      setMedia(prev => ({
+      setFormState(prev => ({
           ...prev,
-          gallery: prev.gallery.map(item => item.id === id ? { ...item, [name]: value } : item)
+          media: {
+              ...prev.media,
+              gallery: prev.media.gallery.map(item => item.id === id ? { ...item, [name]: value } : item)
+          }
       }));
   };
 
   const addGalleryItem = () => {
       const newItem: GalleryMediaItem = { id: `gal${Date.now()}`, thumb: '', full: '', alt: '', caption: '' };
-      setMedia(prev => ({ ...prev, gallery: [...prev.gallery, newItem] }));
+      setFormState(prev => ({ ...prev, media: { ...prev.media, gallery: [...prev.media.gallery, newItem] } }));
   };
 
   const removeGalleryItem = (id: string) => {
-      setMedia(prev => ({ ...prev, gallery: prev.gallery.filter(item => item.id !== id)}));
+      setFormState(prev => ({ ...prev, media: { ...prev.media, gallery: prev.media.gallery.filter(item => item.id !== id) } }));
   };
   
-  const topicList = topics.trim() ? topics.trim().split('\n').filter(Boolean) : [];
-  const maxTopics = parseInt(panelCount, 10);
+  const topicList = formState.topics.trim() ? formState.topics.trim().split('\n').filter(Boolean) : [];
+  const maxTopics = parseInt(formState.panelCount, 10);
 
   const renderInputContent = () => {
     const errorObj = errorsByPath.get('content');
@@ -181,47 +216,33 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
     const errorClass = error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent';
     const baseClass = 'w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition';
     const finalClass = `${baseClass} ${errorClass}`;
-
     const errorElement = error ? <p id="content-error" className="text-red-400 text-sm mt-1" role="alert">{error}</p> : null;
 
     const commonProps = {
-        value: content,
-        onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => handleContentChange(e.target.value),
+        value: formState.content,
+        onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => handleFieldChange('content', e.target.value),
         className: finalClass,
         name: "content",
         'aria-invalid': !!error,
         'aria-describedby': error ? "content-error" : undefined,
     };
 
-    switch (inputType) {
+    switch (formState.inputType) {
       case InputType.URL:
-        return <div>
-            <input type="url" {...commonProps} placeholder="https://beispiel-unternehmen.de" />
-            {errorElement}
-        </div>;
+        return <div><input type="url" {...commonProps} placeholder="https://beispiel-unternehmen.de" />{errorElement}</div>;
       case InputType.TEXT:
-        return <div>
-            <textarea {...commonProps} placeholder="Beschreiben Sie hier Ihr Unternehmen, Ihre Leistungen und Vorteile..." rows={6} />
-            {errorElement}
-        </div>;
+        return <div><textarea {...commonProps} placeholder="Beschreiben Sie hier Ihr Unternehmen, Ihre Leistungen und Vorteile..." rows={6} />{errorElement}</div>;
       case InputType.JSON:
-        return <div>
-            <textarea {...commonProps} placeholder={`{\n  "topic": "Beispiel GmbH",\n  "geo": { "city": "Berlin" },\n  "bullets": ["Punkt 1", "Punkt 2"]\n}`} rows={8} className={`${finalClass} font-mono text-sm`} />
-            {errorElement}
-        </div>;
+        return <div><textarea {...commonProps} placeholder={`{\n  "topic": "Beispiel GmbH",\n  "geo": { "city": "Berlin" },\n  "bullets": ["Punkt 1", "Punkt 2"]\n}`} rows={8} className={`${finalClass} font-mono text-sm`} />{errorElement}</div>;
     }
   };
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" noValidate>
+       <RestoreBanner status={draftStatus} lastSavedTime={lastSavedTime} onRestore={handleRestore} onDiscard={discard} onRestoreIncompatible={handleRestore} />
        <ErrorSummary errors={errors} warnings={warnings} firstErrorId={firstErrorId} />
        <div className="text-center -mt-2 mb-6">
-          <button 
-            type="button" 
-            onClick={handleFillWithDummyData}
-            className="inline-flex items-center space-x-2 text-brand-accent hover:text-brand-accent-hover transition-colors text-sm font-medium"
-            aria-label="Formular mit Beispieldaten füllen"
-          >
+          <button type="button" onClick={handleFillWithDummyData} className="inline-flex items-center space-x-2 text-brand-accent hover:text-brand-accent-hover transition-colors text-sm font-medium" aria-label="Formular mit Beispieldaten füllen">
             <IconSparkles className="w-5 h-5" />
             <span>Mit Beispieldaten füllen</span>
           </button>
@@ -231,7 +252,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
         <label className="block text-lg font-semibold mb-3">1. Input-Quelle wählen</label>
         <div className="flex space-x-2 bg-brand-primary p-1 rounded-lg">
           {(Object.values(InputType)).map(type => (
-            <button key={type} type="button" onClick={() => { setInputType(type); handleContentChange(''); }} className={`w-full py-2 px-4 rounded-md text-sm font-medium transition ${inputType === type ? 'bg-brand-accent text-white shadow' : 'text-brand-text-secondary hover:bg-brand-secondary'}`}>
+            <button key={type} type="button" onClick={() => { handleFieldChange('inputType', type); handleFieldChange('content', ''); }} className={`w-full py-2 px-4 rounded-md text-sm font-medium transition ${formState.inputType === type ? 'bg-brand-accent text-white shadow' : 'text-brand-text-secondary hover:bg-brand-secondary'}`}>
               {type.toUpperCase()}
             </button>
           ))}
@@ -243,10 +264,10 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
       <div>
         <label className="block text-lg font-semibold mb-3">2. Ausgabeformat</label>
         <div className="flex space-x-2 bg-brand-primary p-1 rounded-lg">
-            <button type="button" onClick={() => setOutputFormat('onepage')} className={`w-full py-2 px-4 rounded-md text-sm font-medium transition ${outputFormat === 'onepage' ? 'bg-brand-accent text-white shadow' : 'text-brand-text-secondary hover:bg-brand-secondary'}`}>
+            <button type="button" onClick={() => handleFieldChange('outputFormat', 'onepage')} className={`w-full py-2 px-4 rounded-md text-sm font-medium transition ${formState.outputFormat === 'onepage' ? 'bg-brand-accent text-white shadow' : 'text-brand-text-secondary hover:bg-brand-secondary'}`}>
                 One-Page (HTML)
             </button>
-            <button type="button" onClick={() => setOutputFormat('legacy')} className={`w-full py-2 px-4 rounded-md text-sm font-medium transition ${outputFormat === 'legacy' ? 'bg-brand-accent text-white shadow' : 'text-brand-text-secondary hover:bg-brand-secondary'}`}>
+            <button type="button" onClick={() => handleFieldChange('outputFormat', 'legacy')} className={`w-full py-2 px-4 rounded-md text-sm font-medium transition ${formState.outputFormat === 'legacy' ? 'bg-brand-accent text-white shadow' : 'text-brand-text-secondary hover:bg-brand-secondary'}`}>
                 Module/Panels (Legacy)
             </button>
         </div>
@@ -260,7 +281,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
             const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
             return (
               <div id={toId('geo.companyName')}>
-                <input type="text" name="companyName" value={geo.companyName} onChange={handleGeoChange} placeholder="Firma / Unternehmensname" aria-invalid={!!error} aria-describedby={error ? "companyName-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
+                <input type="text" name="companyName" value={formState.geo.companyName} onChange={handleGeoChange} placeholder="Firma / Unternehmensname" aria-invalid={!!error} aria-describedby={error ? "companyName-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
                 {error && <p id="companyName-error" className="text-red-400 text-sm mt-1" role="alert">{error}</p>}
               </div>
             );
@@ -270,30 +291,30 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
               const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
               return (
                 <div id={toId('geo.slug')}>
-                    <input type="text" name="slug" value={geo.slug} onChange={handleGeoChange} placeholder="SEO-Slug (z.b. firmenname-stadt)" aria-invalid={!!error} aria-describedby={error ? "slug-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
+                    <input type="text" name="slug" value={formState.geo.slug} onChange={handleGeoChange} placeholder="SEO-Slug (z.b. firmenname-stadt)" aria-invalid={!!error} aria-describedby={error ? "slug-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
                     {error && <p id="slug-error" className="text-red-400 text-sm mt-1" role="alert">{error}</p>}
                 </div>
               );
           })()}
-          <input type="text" name="branch" value={geo.branch} onChange={handleGeoChange} placeholder="Branche (z.B. Webdesign)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-          <input type="text" name="street" value={geo.street} onChange={handleGeoChange} placeholder="Straße & Hausnummer" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+          <input type="text" name="branch" value={formState.geo.branch} onChange={handleGeoChange} placeholder="Branche (z.B. Webdesign)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+          <input type="text" name="street" value={formState.geo.street} onChange={handleGeoChange} placeholder="Straße & Hausnummer" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
           <div id={toId('geo.city')}>
              {(() => {
                 const errorObj = errorsByPath.get('geo.city');
                 const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
                 return (
                     <>
-                        <input type="text" name="city" value={geo.city} onChange={handleGeoChange} placeholder="Stadt (z.B. Hamburg)" aria-invalid={!!error} aria-describedby={error ? "city-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
+                        <input type="text" name="city" value={formState.geo.city} onChange={handleGeoChange} placeholder="Stadt (z.B. Hamburg)" aria-invalid={!!error} aria-describedby={error ? "city-error" : undefined} className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`} />
                         {error && <p id="city-error" className="text-red-400 text-sm mt-1" role="alert">{error}</p>}
                     </>
                 );
              })()}
           </div>
-          <input type="text" name="zip" value={geo.zip} onChange={handleGeoChange} placeholder="PLZ (z.B. 20095)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-          <input type="text" name="region" value={geo.region} onChange={handleGeoChange} placeholder="Landkreis / Region" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-          <input type="tel" name="phone" value={geo.phone} onChange={handleGeoChange} placeholder="Telefonnummer" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-          <input type="email" name="email" value={geo.email} onChange={handleGeoChange} placeholder="E-Mail-Adresse" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-          <input type="url" name="website" value={geo.website} onChange={handleGeoChange} placeholder="Webseite (URL)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition sm:col-span-2" />
+          <input type="text" name="zip" value={formState.geo.zip} onChange={handleGeoChange} placeholder="PLZ (z.B. 20095)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+          <input type="text" name="region" value={formState.geo.region} onChange={handleGeoChange} placeholder="Landkreis / Region" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+          <input type="tel" name="phone" value={formState.geo.phone} onChange={handleGeoChange} placeholder="Telefonnummer" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+          <input type="email" name="email" value={formState.geo.email} onChange={handleGeoChange} placeholder="E-Mail-Adresse" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+          <input type="url" name="website" value={formState.geo.website} onChange={handleGeoChange} placeholder="Webseite (URL)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition sm:col-span-2" />
         </div>
         <details className="bg-brand-primary/50 p-4 rounded-lg group mt-4">
             <summary className="text-lg font-semibold list-none cursor-pointer flex justify-between items-center">
@@ -306,7 +327,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
                     {(() => {
                         const errorObj = errorsByPath.get('geo.topAnswer');
                         const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
-                        const value = geo.topAnswer || '';
+                        const value = formState.geo.topAnswer || '';
                         const hasError = (value.length > 0 && value.length < 280) || value.length > 500;
                         return (
                             <>
@@ -328,7 +349,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
                     {(() => {
                         const errorObj = errorsByPath.get('geo.keyFacts');
                         const error = errorObj ? t(errorObj.message, errorObj.params) : undefined;
-                        const facts = geo.keyFacts || [];
+                        const facts = formState.geo.keyFacts || [];
                         return (
                             <>
                                 <div className="space-y-4">
@@ -367,24 +388,24 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
         </details>
       </div>
       
-       {outputFormat === 'onepage' && (
+       {formState.outputFormat === 'onepage' && (
         <details className="bg-brand-primary/50 p-4 rounded-lg group">
             <summary className="text-lg font-semibold list-none cursor-pointer flex justify-between items-center">4. Bilder &amp; Medien <span className="text-brand-accent group-open:rotate-90 transition-transform">&#10148;</span></summary>
             <div className="mt-6 space-y-6">
                 <div>
                     <h4 className="font-semibold text-brand-text mb-2">Hero Banner</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <input type="text" name="hero.headline" value={media.hero.headline} onChange={handleMediaChange} placeholder="Hero: Headline" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-                        <input type="text" name="hero.subtitle" value={media.hero.subtitle} onChange={handleMediaChange} placeholder="Hero: Subtitle" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-                        <input type="text" name="hero.alt" value={media.hero.alt} onChange={handleMediaChange} placeholder="Hero: Alt-Text (wichtig für SEO!)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 sm:col-span-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
-                        <input type="url" name="hero.jpg" value={media.hero.jpg} onChange={handleMediaChange} placeholder="Hero: URL zu JPG/PNG (Fallback)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 sm:col-span-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+                        <input type="text" name="hero.headline" value={formState.media.hero.headline} onChange={handleMediaChange} placeholder="Hero: Headline" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+                        <input type="text" name="hero.subtitle" value={formState.media.hero.subtitle} onChange={handleMediaChange} placeholder="Hero: Subtitle" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+                        <input type="text" name="hero.alt" value={formState.media.hero.alt} onChange={handleMediaChange} placeholder="Hero: Alt-Text (wichtig für SEO!)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 sm:col-span-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
+                        <input type="url" name="hero.jpg" value={formState.media.hero.jpg} onChange={handleMediaChange} placeholder="Hero: URL zu JPG/PNG (Fallback)" className="bg-brand-primary border border-brand-accent/50 rounded-md p-3 sm:col-span-2 focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
                     </div>
                 </div>
 
                  <div>
                     <h4 className="font-semibold text-brand-text mb-2">Bildergalerie</h4>
                     <div className="space-y-4">
-                        {media.gallery.map((item, index) => (
+                        {formState.media.gallery.map((item, index) => (
                              <div key={item.id} className="bg-brand-primary p-3 rounded-md grid grid-cols-1 sm:grid-cols-2 gap-3 relative">
                                 <input type="url" name="thumb" value={item.thumb} onChange={(e) => handleGalleryChange(item.id, e)} placeholder={`Vorschau-URL ${index + 1}`} className="bg-brand-secondary border border-brand-accent/50 rounded-md p-2 text-sm focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
                                 <input type="url" name="full" value={item.full} onChange={(e) => handleGalleryChange(item.id, e)} placeholder={`Vollbild-URL ${index + 1}`} className="bg-brand-secondary border border-brand-accent/50 rounded-md p-2 text-sm focus:ring-2 focus:ring-brand-accent focus:outline-none transition" />
@@ -408,8 +429,8 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
             <select 
               id="panelCount" 
               name="panelCount"
-              value={panelCount} 
-              onChange={e => setPanelCount(e.target.value as PanelCount)} 
+              value={formState.panelCount} 
+              onChange={e => handleFieldChange('panelCount', e.target.value as PanelCount)} 
               className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition"
             >
               <option value={PanelCount.ONE}>1 Sektion (Fokus)</option>
@@ -424,8 +445,8 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
             <select 
               id="contentDepth" 
               name="contentDepth"
-              value={contentDepth} 
-              onChange={e => setContentDepth(e.target.value as ContentDepth)} 
+              value={formState.contentDepth} 
+              onChange={e => handleFieldChange('contentDepth', e.target.value as ContentDepth)} 
               className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition"
             >
               <option value={ContentDepth.COMPACT}>Kompakt (wenige Akkordeons)</option>
@@ -446,8 +467,8 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
                   <textarea
                     id="topics"
                     name="topics"
-                    value={topics}
-                    onChange={e => setTopics(e.target.value)}
+                    value={formState.topics}
+                    onChange={e => handleFieldChange('topics', e.target.value)}
                     placeholder="Ein Thema pro Zeile. Fehlende Themen werden automatisch ergänzt."
                     rows={4}
                     className={`w-full bg-brand-primary border rounded-md p-3 focus:ring-2 focus:outline-none transition ${error ? 'border-red-500 ring-red-500' : 'border-brand-accent/50 focus:ring-brand-accent'}`}
@@ -466,7 +487,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
 
       <div>
         <label htmlFor="tone" className="block text-lg font-semibold mb-3">8. Tonfall</label>
-        <select id="tone" name="tone" value={tone} onChange={e => setTone(e.target.value as Tone)} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition">
+        <select id="tone" name="tone" value={formState.tone} onChange={e => handleFieldChange('tone', e.target.value as Tone)} className="w-full bg-brand-primary border border-brand-accent/50 rounded-md p-3 focus:ring-2 focus:ring-brand-accent focus:outline-none transition">
           {Object.values(Tone).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
         </select>
       </div>
@@ -480,14 +501,14 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
               <div className="flex items-center justify-between">
                   <span className="text-sm text-brand-text-secondary">{t('jsonld.toggle.faq')}</span>
                   <label htmlFor="toggle-faq-jsonld" className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" id="toggle-faq-jsonld" className="sr-only peer" checked={jsonLdToggles.generateFaqJsonLd} onChange={() => setJsonLdToggles(prev => ({...prev, generateFaqJsonLd: !prev.generateFaqJsonLd}))} />
+                      <input type="checkbox" id="toggle-faq-jsonld" className="sr-only peer" checked={formState.jsonLdToggles.generateFaqJsonLd} onChange={() => setFormState(prev => ({...prev, jsonLdToggles: {...prev.jsonLdToggles, generateFaqJsonLd: !prev.jsonLdToggles.generateFaqJsonLd}}))} />
                       <div className="w-11 h-6 bg-brand-primary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-accent"></div>
                   </label>
               </div>
               <div className="flex items-center justify-between">
                   <span className="text-sm text-brand-text-secondary">{t('jsonld.toggle.howto')}</span>
                    <label htmlFor="toggle-howto-jsonld" className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" id="toggle-howto-jsonld" className="sr-only peer" checked={jsonLdToggles.generateHowToJsonLd} onChange={() => setJsonLdToggles(prev => ({...prev, generateHowToJsonLd: !prev.generateHowToJsonLd}))} />
+                      <input type="checkbox" id="toggle-howto-jsonld" className="sr-only peer" checked={formState.jsonLdToggles.generateHowToJsonLd} onChange={() => setFormState(prev => ({...prev, jsonLdToggles: {...prev.jsonLdToggles, generateHowToJsonLd: !prev.jsonLdToggles.generateHowToJsonLd}}))} />
                       <div className="w-11 h-6 bg-brand-primary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-accent"></div>
                   </label>
               </div>
@@ -498,7 +519,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
       <div className="pt-4 space-y-4">
          <div className="flex items-center justify-center space-x-3">
             <label htmlFor="keep-design" className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="keep-design" className="sr-only peer" checked={keepDesign} onChange={() => setKeepDesign(prev => !prev)} />
+                <input type="checkbox" id="keep-design" className="sr-only peer" checked={formState.keepDesign} onChange={() => handleFieldChange('keepDesign', !formState.keepDesign)} />
                 <div className="w-11 h-6 bg-brand-primary peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-accent"></div>
             </label>
             <span className="text-sm text-brand-text-secondary">Design vom letzten Job übernehmen</span>
