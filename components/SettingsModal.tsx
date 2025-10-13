@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, ChangeEvent } from 'react';
 import type { Sixpack, VCardData, Meta, Geo } from '../types';
 import { IconDownload, IconCopy, IconVCard } from './Icons';
@@ -12,15 +13,16 @@ interface SettingsModalProps {
 type ActiveTab = 'impressum' | 'vcard' | 'tts';
 const VOICE_STORAGE_KEY = 'tts_selected_voice_uri';
 
+// FIX: Updated function to correctly use `geo` object properties as fallbacks.
 const generateImpressumText = (meta: Meta | undefined, geo: Geo | undefined): string => {
-    const company = meta?.companyName || (geo?.branch ? `[Firma für ${geo.branch}]` : '[Firma/Name]');
-    const street = meta?.street || '[Straße Hausnummer]';
+    const company = meta?.companyName || geo?.companyName || '[Firma/Name]';
+    const street = meta?.street || geo?.street || '[Straße Hausnummer]';
     const zip = geo?.zip || '[PLZ]';
     const city = geo?.city || '[Stadt]';
     const representatives = meta?.representatives?.join(', ') || '[Vertreten durch]';
-    const phone = meta?.phone || '[Telefonnummer]';
+    const phone = meta?.phone || geo?.phone || '[Telefonnummer]';
     const fax = meta?.fax || '[Faxnummer]';
-    const email = meta?.email || '[E-Mail-Adresse]';
+    const email = meta?.email || geo?.email || '[E-Mail-Adresse]';
     const taxId = meta?.taxId || '[DE999999999]';
 
     return `Impressum
@@ -72,21 +74,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
 
   useEffect(() => {
     if (isOpen && sixpack) {
-      const { meta, geo, topic } = sixpack;
+      // FIX: Correctly destructure `geo` and `topic` from `sixpack.results`.
+      const { results } = sixpack;
+      const { geo, topic } = results;
       
+      // FIX: Reliably source all vCard data from the `geo` object.
       setVCardData({
-        company: meta?.companyName || topic || '',
+        company: geo.companyName || topic || '',
         branch: geo.branch || '',
-        phone: meta?.phone || '',
-        email: meta?.email || '',
-        website: meta?.website || '',
-        street: meta?.street || '',
+        phone: geo.phone || '',
+        email: geo.email || '',
+        website: geo.website || '',
+        street: geo.street || '',
         city: geo.city || '',
         region: geo.region || '',
         zip: geo.zip || '',
       });
-
-      setImpressumText(generateImpressumText(meta, geo));
+      
+      // The `meta` object from results is for SEO, not impressum.
+      // Pass `undefined` for `meta` and let the updated `generateImpressumText`
+      // function rely on the correct `geo` object.
+      setImpressumText(generateImpressumText(undefined, geo));
     }
   }, [isOpen, sixpack]);
 
@@ -149,7 +157,7 @@ END:VCARD`;
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-brand-primary/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="absolute inset-0 bg-brand-primary/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-brand-secondary rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center p-4 border-b border-brand-accent/20">
           <h2 className="text-xl font-bold">Einstellungen & Export</h2>

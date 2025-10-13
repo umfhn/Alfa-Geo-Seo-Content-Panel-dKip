@@ -37,5 +37,18 @@
   "jsonld.tooLarge": "Warning: The size of the {type} schema exceeds 100KB and might impact page load time.",
   "labels.export.dkipCli": "dKip-CLI JSON",
   "labels.export.acf": "ACF JSON",
-  "hints.export.mappingV1": "Mapping v1 – Foundation for Import/ACF"
+  "hints.export.mappingV1": "Mapping v1 – Foundation for Import/ACF",
+  "error.apiKeyMissing": "API key not set. Please add your Google Gemini API key in the header settings.",
+  "apiKey.title": "Manage API Key",
+  "apiKey.description": "Enter your Google Gemini API key here. It will be stored securely in your local browser storage and used for all AI requests.",
+  "apiKey.close": "Close",
+  "apiKey.cancel": "Cancel",
+  "apiKey.saveAndTest": "Save & Test",
+  "autosave.found": "An unsaved draft was found.",
+  "autosave.restore": "Restore",
+  "autosave.discard": "Discard",
+  "autosave.incompatible": "Outdated draft found.",
+  "autosave.incompatible.restoreAnyway": "Restore anyway",
+  "autosave.tooLarge": "Draft too large to save. Autosave disabled.",
+  "autosave.savedAt": "Saved at {time}"
 }

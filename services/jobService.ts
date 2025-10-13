@@ -1,8 +1,10 @@
 
 
-import type { UserInput, Job, JobStep, PanelResult, HealthReport, Panel, LintingResults, Geo, QualityScoreBreakdownValue } from '../types';
+
+
+import type { UserInput, Job, JobStep, PanelResult, HealthReport, Panel, LintingResults, Geo, QualityScoreBreakdownValue, PanelCount, PanelSegmentsLockState } from '../types';
 import { designPresets } from './exportService';
-import { generateSinglePanelLive, runAIPing } from './geminiService';
+import { generateSinglePanelLive, runAIPing, regeneratePanelSegment } from './geminiService';
 import { FLAGS } from '../flags';
 import { lintPanel, lintSetKeywordDups } from './lintService';
 import { saveActiveJob, loadActiveJob, clearActiveJob } from './persistence';
@@ -115,6 +117,10 @@ const runJob = async (jobId: string) => {
 
             // FIX: Skip panels that have already been successfully generated to allow for resume functionality.
             if (job.results.panels[i].status === 'ok') {
+                const existingPanel = job.results.panels[i].panel;
+                if (existingPanel?.title) {
+                    existingTitles.push(existingPanel.title);
+                }
                 continue;
             }
             
@@ -255,14 +261,91 @@ export const controlJob = async (jobId: string, action: 'resume' | 'pause' | 'ne
     if (!job) throw new Error('Job not found');
     switch(action) {
         case 'pause': if (job.state === 'running') job.state = 'paused'; break;
-        // FIX: Re-trigger the job orchestrator when resuming a paused job.
         case 'resume': if (job.state === 'paused') { job.state = 'running'; runJob(jobId); } break;
         case 'cancel': job.state = 'error'; job.lastError = { code: 'CANCELLED', message: 'Job vom Benutzer abgebrochen.', atStep: job.step.kind }; break;
         case 'run_linter':
              job.results.panels.forEach(p => { if (p.panel) { p.linting_results = createDummyLintingResults(p.panel); } });
              await new Promise(res => setTimeout(res, 300));
             break;
-        // Other control actions like regenerate need to be reimplemented in the new orchestrator model
+        // FIX: Implement missing control actions
+        case 'regenerate_panel':
+            if (panelIndex !== undefined && job.results.panels[panelIndex]) {
+                const panelResult = job.results.panels[panelIndex];
+                job.results.panels[panelIndex] = {
+                    ...panelResult,
+                    status: 'pending',
+                    panel: undefined,
+                    error: undefined,
+                    linting_results: { passed: false, has_warnings: false, issues: [], similarity_score: 0, content_hash: '' },
+                    quality_score: undefined,
+                };
+                if (job.state !== 'running') {
+                    job.state = 'running';
+                    runJob(jobId);
+                }
+            }
+            break;
+        case 'add_panel':
+            if (payload?.topic) {
+                const newPanelIndex = job.results.panels.length;
+                const newPanelResult: PanelResult = {
+                    index: newPanelIndex,
+                    status: 'pending',
+                    topic: payload.topic,
+                    angle: 'Leistungen',
+                    linting_results: { passed: false, has_warnings: false, issues: [], similarity_score: 0, content_hash: '' },
+                };
+                job.results.panels.push(newPanelResult);
+                job.userInput.panelCount = String(job.results.panels.length) as PanelCount;
+                if (!job.userInput.topics) job.userInput.topics = [];
+                job.userInput.topics.push(payload.topic);
+                if (job.state !== 'running') {
+                    job.state = 'running';
+                    runJob(jobId);
+                }
+            }
+            break;
+        case 'regenerate_panel_segment':
+            if (panelIndex !== undefined && payload?.segment && job.results.panels[panelIndex]?.panel) {
+                const panelToUpdate = job.results.panels[panelIndex];
+                const segment = payload.segment;
+                const originalState = job.state;
+                job.state = 'running';
+                job.step = { kind: 'panel_segment', index: panelIndex, segment, description: `Generiere '${segment}' neu...` };
+                persistJob(job);
+
+                try {
+                    const existingTitles = job.results.panels.filter(p => p.panel && p.index !== panelIndex).map(p => p.panel!.title);
+                    const regeneratedPanel = await regeneratePanelSegment(job.userInput, panelToUpdate.panel!, segment, existingTitles);
+
+                    // Re-lint the updated panel
+                    const panelIssues = lintPanel(regeneratedPanel, job.results.geo?.city, job.results.geo?.region);
+                    const linting_results = {
+                        passed: !panelIssues.some(i => i.severity === 'ERROR'),
+                        has_warnings: panelIssues.some(i => i.severity === 'WARN'),
+                        issues: panelIssues,
+                        similarity_score: 0.1, // Dummy value
+                        content_hash: calculatePanelContentHash(regeneratedPanel),
+                        quality_score_breakdown: createDummyLintingResults(regeneratedPanel).quality_score_breakdown
+                    };
+
+                    const quality_score = Math.round(Object.values(linting_results.quality_score_breakdown || {}).reduce((acc, curr) => acc + curr.score * curr.weight, 0));
+
+                    panelToUpdate.panel = regeneratedPanel;
+                    panelToUpdate.linting_results = linting_results;
+                    panelToUpdate.quality_score = quality_score;
+                    if (panelToUpdate.segment_locks) {
+                        delete panelToUpdate.segment_locks[segment as keyof PanelSegmentsLockState];
+                    }
+                    job.state = originalState; // Restore original state
+                    job.step = { kind: 'finalizing', description: 'Abgeschlossen' }; // Reset step
+                } catch (error) {
+                    console.error("Segment regeneration failed:", error);
+                    job.state = 'error';
+                    job.lastError = { code: 'SEGMENT_REGEN_FAILED', message: error instanceof Error ? error.message : "Segment-Regenerierung fehlgeschlagen.", atStep: job.step.kind };
+                }
+            }
+            break;
         default: console.warn(`Control action '${action}' not fully implemented.`); break;
     }
     persistJob(job);

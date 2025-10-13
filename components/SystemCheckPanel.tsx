@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { runHealthCheck } from '../services/jobService';
 import type { HealthReport, HealthStatus, HealthCheckResult, RunHistory, SystemInfo } from '../types';
@@ -209,7 +210,7 @@ export const SystemCheckPanel: React.FC = () => {
 
             </div>
              {toast && (
-                <div className="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+                <div className="absolute bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
                     {toast}
                 </div>
             )}

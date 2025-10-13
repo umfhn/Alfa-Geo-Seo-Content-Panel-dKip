@@ -1,9 +1,29 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Panel, Geo, UserInput } from '../types';
+import { t } from '../i18n';
 
 // This service encapsulates all direct communication with the Google GenAI API.
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// FIX: Per @google/genai guidelines, the API key must be provided via environment variables.
+// UI-based key management has been removed.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+
+
+/**
+ * Retrieves the initialized AI client.
+ * @throws An error if the API key is not configured.
+ * @returns The GoogleGenAI client instance.
+ */
+const getClient = (): GoogleGenAI => {
+    // The API key is mandatory for the service to function.
+    if (!process.env.API_KEY) {
+        // This error message should be translated. Assuming 't' function handles it.
+        throw new Error(t('error.apiKeyMissing'));
+    }
+    return ai;
+};
+
 
 // Define a strict JSON schema for the AI's response to ensure consistency.
 const panelSchema = {
@@ -81,9 +101,10 @@ const createPrompt = (userInput: UserInput, topic: string, existingTitles: strin
  */
 export const generateSinglePanelLive = async (userInput: UserInput, topic: string, existingTitles: string[]): Promise<Panel> => {
     const prompt = createPrompt(userInput, topic, existingTitles);
+    const client = getClient();
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
@@ -123,18 +144,104 @@ export const generateSinglePanelLive = async (userInput: UserInput, topic: strin
     }
 };
 
+// FIX: Add a prompt creation function for regenerating a specific segment of a panel.
+const createSegmentRegeneratePrompt = (userInput: UserInput, panel: Panel, segment: string, existingTitles: string[]): string => {
+    const { geo, tone, contentDepth } = userInput;
+    const panelContent = JSON.stringify(panel, null, 2);
+
+    const existingTitlesPrompt = existingTitles.length > 0
+        ? `Bestehende Titel (vermeide Duplikate und zu große Ähnlichkeit): ${existingTitles.join(', ')}`
+        : 'Dies ist die erste Sektion, es gibt noch keine anderen Titel.';
+
+    return `
+      Aufgabe: Regeneriere NUR das Segment "${segment}" für das folgende JSON-Objekt.
+      Behalte alle anderen Segmente exakt bei. Gib das vollständige JSON-Objekt mit dem aktualisierten Segment zurück.
+
+      **Kontext:**
+      Firma: "${geo.companyName}" in ${geo.city}, ${geo.region} (${geo.branch}).
+      Tonalität: ${tone}
+      Detailgrad: ${contentDepth}
+      GEO-Fokus: Integriere die Ortsangaben (${geo.city}, ${geo.region}) und den Firmennamen organisch in die neuen Texte.
+      Einzigartigkeit: Falls der Titel regeneriert wird, muss er sich von den bestehenden unterscheiden.
+
+      ${existingTitlesPrompt}
+      
+      **Bestehendes JSON-Objekt:**
+      \`\`\`json
+      ${panelContent}
+      \`\`\`
+
+      Generiere jetzt das vollständige JSON-Objekt mit dem aktualisierten Segment "${segment}".
+    `;
+};
+
+// FIX: Add a new exported function to handle segment regeneration via the Gemini API.
+/**
+ * Regenerates a specific segment of a panel.
+ */
+export const regeneratePanelSegment = async (userInput: UserInput, panel: Panel, segment: string, existingTitles: string[]): Promise<Panel> => {
+    // For segment regeneration, we ask the model to regenerate one part but return the full object
+    // to ensure schema validity.
+    const prompt = createSegmentRegeneratePrompt(userInput, panel, segment, existingTitles);
+    const client = getClient();
+
+    try {
+        const response = await client.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: panelSchema,
+                temperature: 0.75, // Slightly higher temp for creative changes
+            },
+        });
+
+        const jsonString = response.text;
+        const regeneratedPanel = JSON.parse(jsonString) as Omit<Panel, 'kind' | 'sources' | 'payloadHash'>;
+        
+        // Return the full panel, but keep some original metadata
+        return {
+            ...regeneratedPanel,
+            kind: panel.kind,
+            sources: panel.sources,
+            payloadHash: `live-hash-${new Date().getTime()}` // New hash for new content
+        };
+
+    } catch (error) {
+        console.error(`Gemini API call failed for segment regeneration (${segment}):`, error);
+        // Reuse error handling from generateSinglePanelLive for consistency
+        let errorMessage = `Ein Fehler ist bei der Regenerierung des Segments '${segment}' aufgetreten.`;
+        if (error instanceof Error) {
+            if (error.message.includes('SAFETY')) {
+                errorMessage = `Inhaltsfilter blockiert: Der Inhalt für Segment '${segment}' wurde blockiert.`;
+            } else if (error.message.includes('429')) {
+                errorMessage = `Rate-Limit erreicht bei Regenerierung von Segment '${segment}'.`;
+            } else if (error.message.toLowerCase().includes('json')) {
+                 errorMessage = `Formatfehler (Segment '${segment}'): Die KI hat ein ungültiges JSON-Format zurückgegeben.`;
+            } else {
+                errorMessage = `KI-Fehler (Segment '${segment}'): ${error.message}`;
+            }
+        }
+        throw new Error(errorMessage);
+    }
+};
+
+
 /**
  * A simple diagnostic function to test the AI connection.
  */
 export const runAIPing = async (): Promise<{ ok: boolean, latency_ms: number, message: string }> => {
     const startTime = Date.now();
+    const client = getClient();
     try {
-        const response = await ai.models.generateContent({
+        const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
             contents: "Antworte nur mit 'pong'.",
+// FIX: Removed `maxOutputTokens` from the config for this low-latency check. 
+// The guidelines recommend avoiding this parameter unless necessary, and the "disable thinking"
+// use case example does not include it.
              config: { 
-                thinkingConfig: { thinkingBudget: 0 },
-                maxOutputTokens: 5 
+                thinkingConfig: { thinkingBudget: 0 }
             }
         });
         const latency = Date.now() - startTime;
@@ -188,9 +295,10 @@ export const generateSeoMetadataFromContent = async (
 
       Generiere jetzt das JSON-Objekt mit Titel und Beschreibung.
     `;
+    const client = getClient();
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {

@@ -25,20 +25,20 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onSystemCheckCl
               <span>AI-Powered GEO Content</span>
             </div>
             <button 
-                onClick={onSystemCheckClick} 
-                className="p-2 rounded-full text-brand-text-secondary hover:bg-brand-secondary hover:text-white transition-colors" 
-                aria-label="System-Check öffnen"
-                title="System-Check"
-            >
-              <IconShieldCheck className="w-6 h-6" />
-            </button>
-            <button 
                 onClick={onSettingsClick} 
                 className="p-2 rounded-full text-brand-text-secondary hover:bg-brand-secondary hover:text-white transition-colors" 
                 aria-label="Einstellungen öffnen"
                 title="Einstellungen"
             >
               <IconSettings className="w-6 h-6" />
+            </button>
+            <button 
+                onClick={onSystemCheckClick} 
+                className="p-2 rounded-full text-brand-text-secondary hover:bg-brand-secondary hover:text-white transition-colors" 
+                aria-label="System-Check öffnen"
+                title="System-Check"
+            >
+              <IconShieldCheck className="w-6 h-6" />
             </button>
           </div>
         </div>

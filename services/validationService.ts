@@ -1,8 +1,10 @@
 // services/validationService.ts
 import type { Geo, PanelCount, ValidationError, Warning, Job } from '../types';
+import { InputType } from '../types';
 import { lintGeoText } from './textLint';
 
 export interface FormState {
+    inputType: InputType;
     content: string;
     geo: Geo;
     topics: string;
@@ -20,14 +22,24 @@ const MIN_CONTENT_LENGTH = 150;
 export const validateForm = (state: FormState): ValidationError[] => {
     const errors: ValidationError[] = [];
 
-    // Rule 1: Content must not be empty and should have a minimum length
-    if (!state.content || state.content.trim().length < MIN_CONTENT_LENGTH) {
-        errors.push({
-            path: 'content',
-            message: 'val.content.minLength',
-            params: { min: MIN_CONTENT_LENGTH },
-        });
+    // Rule 1: Content validation depends on the input type
+    if (state.inputType === InputType.TEXT) {
+        if (!state.content || state.content.trim().length < MIN_CONTENT_LENGTH) {
+            errors.push({
+                path: 'content',
+                message: 'val.content.minLength',
+                params: { min: MIN_CONTENT_LENGTH },
+            });
+        }
+    } else { // Handles URL and JSON
+        if (!state.content || state.content.trim().length === 0) {
+            errors.push({
+                path: 'content',
+                message: 'val.required',
+            });
+        }
     }
+
 
     // Rule 2: Essential GEO fields must be filled
     if (!state.geo.companyName.trim()) {

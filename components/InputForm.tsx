@@ -57,11 +57,12 @@ export const InputForm: React.FC<InputFormProps> = ({ onGenerate, isLoading, onV
   
   // --- Validation Hook ---
   const formStateForValidation = useMemo<FormState>(() => ({
+    inputType: formState.inputType,
     content: formState.content,
     geo: formState.geo,
     topics: formState.topics,
     panelCount: formState.panelCount,
-  }), [formState.content, formState.geo, formState.topics, formState.panelCount]);
+  }), [formState.inputType, formState.content, formState.geo, formState.topics, formState.panelCount]);
 
   const { errors, warnings, errorsByPath, validateNow, isValid, errorCount, warnCount, firstErrorId } = useValidation(formStateForValidation);
 

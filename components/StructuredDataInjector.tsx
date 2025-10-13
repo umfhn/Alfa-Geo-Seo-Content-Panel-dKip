@@ -1,5 +1,4 @@
 // components/StructuredDataInjector.tsx
-// Added missing React import to make the React namespace available for React.FC.
 import React, { useEffect } from 'react';
 
 interface StructuredDataInjectorProps {

@@ -365,6 +365,7 @@ export interface LayoutConfig {
 
 // --- Validation Service ---
 export interface FormState {
+    inputType: InputType;
     content: string;
     geo: Geo;
     topics: string;
@@ -412,14 +413,15 @@ export interface DkipCliDockItem {
   icon: 'phone' | 'mail' | 'share' | 'map';
 }
 
+// FIX: Removed invalid semicolon after the union type definition.
 export type DkipCliSection =
-  | { id: string; type: 'Hero'; title: string; subtitle: string; mediaUrl: string; }
-  | { id: string; type: 'FAQ'; faqs: Array<{ question: string; answer: string; }>; }
-  | { id: string; type: 'HowTo'; steps: Array<{ name: string; text: string; }>; }
-  | { id: string; type: 'HTML'; html: string; trusted: true; }
-  | { id: string; type: 'Media'; url: string; alt: string; }
-  | { id: string; type: 'Downloads'; files: Array<{ label: string; url: string; }>; }
-  | { id: string; type: 'Accordion'; items: Array<{ title: string; content: string; }>; };
+  | { id: string; type: 'Hero'; title: string; subtitle: string; mediaUrl: string }
+  | { id: string; type: 'FAQ'; faqs: Array<{ question: string; answer: string }> }
+  | { id: string; type: 'HowTo'; steps: Array<{ name: string; text: string }> }
+  | { id: string; type: 'HTML'; html: string; trusted: true }
+  | { id: string; type: 'Media'; url: string; alt: string }
+  | { id: string; type: 'Downloads'; files: Array<{ label: string; url: string }> }
+  | { id: string; type: 'Accordion'; items: Array<{ title: string; content: string }> }
 
 export interface DkipCliJson {
   page: DkipCliPage;

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Job, CIColors, Panel, SectionLabels, ExportProfile, PanelResult, LintIssue, SeoData, Warning, ValidationError } from '../types';
 import AccordionPanel from './AccordionPanel';
@@ -71,7 +72,7 @@ const DesignPresetModal: React.FC<{
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-brand-primary/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="absolute inset-0 bg-brand-primary/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-brand-secondary rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center p-4 border-b border-brand-accent/20">
                     <h2 className="text-xl font-bold">Design-Presets wählen</h2>
@@ -862,7 +863,7 @@ export const SixpackRenderer: React.FC<SixpackRendererProps> = ({
 
        {activeExplainabilityPanel && ( <ExplainabilityCard panelResult={activeExplainabilityPanel} onClose={() => setActiveExplainabilityPanelIndex(null)} /> )}
       {toast && (
-          <div aria-live="polite" className={`fixed bottom-5 right-5 max-w-sm w-full p-4 rounded-lg shadow-lg text-white z-50 ${ toast.type === 'success' ? 'bg-green-600' : toast.type === 'warning' ? 'bg-red-600' : 'bg-red-600' }`}>
+          <div aria-live="polite" className={`absolute bottom-5 right-5 max-w-sm w-full p-4 rounded-lg shadow-lg text-white z-50 ${ toast.type === 'success' ? 'bg-green-600' : toast.type === 'warning' ? 'bg-red-600' : 'bg-red-600' }`}>
             <div className="flex items-start">
               <div className="flex-1">
                 <p className="text-sm font-semibold">{toast.type === 'success' && 'Erfolgreich'} {toast.type === 'warning' && 'Warnung'} {toast.type === 'error' && 'Fehler'}</p>

@@ -37,5 +37,18 @@
   "jsonld.tooLarge": "Warnung: Die Größe des {type}-Schemas überschreitet 100KB und könnte die Seitenladezeit beeinflussen.",
   "labels.export.dkipCli": "dKip-CLI JSON",
   "labels.export.acf": "ACF JSON",
-  "hints.export.mappingV1": "Mapping v1 – Grundlage für Import/ACF"
+  "hints.export.mappingV1": "Mapping v1 – Grundlage für Import/ACF",
+  "error.apiKeyMissing": "API-Schlüssel nicht festgelegt. Bitte fügen Sie Ihren Google Gemini API-Schlüssel in den Header-Einstellungen hinzu.",
+  "apiKey.title": "API-Schlüssel verwalten",
+  "apiKey.description": "Geben Sie hier Ihren Google Gemini API-Schlüssel ein. Er wird sicher in Ihrem lokalen Browser-Speicher abgelegt und für alle KI-Anfragen verwendet.",
+  "apiKey.close": "Schließen",
+  "apiKey.cancel": "Abbrechen",
+  "apiKey.saveAndTest": "Speichern & Testen",
+  "autosave.found": "Ein ungespeicherter Entwurf wurde gefunden.",
+  "autosave.restore": "Wiederherstellen",
+  "autosave.discard": "Verwerfen",
+  "autosave.incompatible": "Veralteter Entwurf gefunden.",
+  "autosave.incompatible.restoreAnyway": "Trotzdem wiederherstellen",
+  "autosave.tooLarge": "Entwurf zu groß zum Speichern. Autosave deaktiviert.",
+  "autosave.savedAt": "Gespeichert um {time}"
 }

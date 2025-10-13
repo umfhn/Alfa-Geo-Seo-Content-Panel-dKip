@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { InputForm } from './components/InputForm';
@@ -8,6 +9,8 @@ import { SettingsModal } from './components/SettingsModal';
 import { SystemCheckPanel } from './components/SystemCheckPanel';
 import { LayoutModule } from './components/LayoutModule';
 import { startJob, getJobStatus, controlJob, getTopicSuggestions, initJobFromStorage, clearPersistedJob } from './services/jobService';
+// FIX: Removed API key management from UI. The key is now handled via environment variables as per guidelines.
+// FIX: Unused import `runAIPing` removed.
 import { clearDraft } from './services/persistence';
 import type { UserInput, Job, Warning, SeoData } from './types';
 import { FLAGS } from './flags';
@@ -54,6 +57,9 @@ const App: React.FC = () => {
         // In a real scenario, this would trigger a specific backend call.
         console.log(`Regenerating panel ${panelIndex}`);
         await controlJob(job.jobId, 'regenerate_panel', panelIndex);
+        // FIX: Fetched and set the updated job state after the control action to ensure the UI updates.
+        const updatedJob = await getJobStatus(job.jobId);
+        setJob(updatedJob);
     }
   }, [job]);
 
@@ -61,6 +67,9 @@ const App: React.FC = () => {
     if(job) {
       console.log(`Regenerating segment ${segment} of panel ${panelIndex}`);
       await controlJob(job.jobId, 'regenerate_panel_segment', panelIndex, { segment });
+      // FIX: Fetched and set the updated job state after the control action to ensure the UI updates.
+      const updatedJob = await getJobStatus(job.jobId);
+      setJob(updatedJob);
     }
   }, [job]);
   
@@ -68,6 +77,9 @@ const App: React.FC = () => {
     if(job) {
       console.log(`Adding new panel with topic: ${topic}`);
       await controlJob(job.jobId, 'add_panel', undefined, { topic });
+      // FIX: Fetched and set the updated job state after the control action to ensure the UI updates.
+      const updatedJob = await getJobStatus(job.jobId);
+      setJob(updatedJob);
     }
   }, [job]);
 
@@ -121,6 +133,7 @@ const App: React.FC = () => {
   useEffect(() => {
       const initializeApp = async () => {
           await initI18n();
+          // FIX: API key is now handled by environment variables, removing local storage and UI logic.
           if (FLAGS.PERSISTENCE_MVP) {
               const persistedJob = initJobFromStorage();
               if (persistedJob) {
@@ -138,7 +151,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-brand-primary min-h-screen text-brand-text font-sans">
+    <div className="bg-brand-primary min-h-screen text-brand-text font-sans relative">
       <Header 
         onSettingsClick={() => setIsSettingsModalOpen(true)}
         onSystemCheckClick={() => setView('system_check')}
