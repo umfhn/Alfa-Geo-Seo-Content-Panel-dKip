@@ -35,7 +35,7 @@ export const AddPanelModal: React.FC<AddPanelModalProps> = ({ isOpen, onClose, o
 
   return (
     <div 
-      className="absolute inset-0 bg-brand-primary/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" 
+      className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4" 
       onClick={onClose}
       aria-modal="true"
       role="dialog"

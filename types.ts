@@ -421,6 +421,7 @@ export type DkipCliSection =
   | { id: string; type: 'HTML'; html: string; trusted: true }
   | { id: string; type: 'Media'; url: string; alt: string }
   | { id: string; type: 'Downloads'; files: Array<{ label: string; url: string }> }
+// FIX: Removed invalid semicolon from the end of the union type definition as it was likely causing parsing issues.
   | { id: string; type: 'Accordion'; items: Array<{ title: string; content: string }> }
 
 export interface DkipCliJson {

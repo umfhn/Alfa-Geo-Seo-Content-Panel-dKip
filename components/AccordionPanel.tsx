@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import type { PanelResult, CIColors, SectionLabels, PanelSegmentsLockState, Job } from '../types';
-import { IconPlay, IconPause, IconStop, IconEdit, IconClipboardList, IconShieldCheck, IconRefresh, IconLock, IconUnlock, IconDownload, IconGripVertical } from './Icons';
+import { IconPlay, IconPause, IconStop, IconEdit, IconClipboardList, IconShieldCheck, IconRefresh, IconLock, IconUnlock, IconCopy, IconGripVertical } from './Icons';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
 
 interface AccordionPanelProps {
@@ -16,7 +16,7 @@ interface AccordionPanelProps {
   onRegenerate: (panelIndex: number) => void;
   onRegeneratePanelSegment: (panelIndex: number, segment: string) => void;
   onToggleLock: (panelIndex: number) => void;
-  onDownloadPanel: (panelIndex: number) => void;
+  onCopyPanel: (panelIndex: number) => void;
 }
 
 const defaultLabels: SectionLabels = {
@@ -66,7 +66,7 @@ const AccordionPanel: React.FC<AccordionPanelProps> = ({
     onRegenerate,
     onRegeneratePanelSegment,
     onToggleLock,
-    onDownloadPanel
+    onCopyPanel
 }) => {
   const { panel, index: panelIndex, quality_score = 0, is_locked = false, segment_locks } = panelResult;
 
@@ -288,12 +288,12 @@ const AccordionPanel: React.FC<AccordionPanelProps> = ({
                 <IconShieldCheck className="w-5 h-5" />
             </button>
             <button 
-                onClick={() => onDownloadPanel(panelIndex)}
+                onClick={() => onCopyPanel(panelIndex)}
                 className="p-2 rounded-full text-brand-text-secondary hover:bg-brand-secondary hover:text-white transition-colors"
-                aria-label="Sektion als HTML herunterladen"
-                title="Sektion als HTML herunterladen"
+                aria-label="Sektion als HTML kopieren"
+                title="Sektion als HTML kopieren"
             >
-                <IconDownload className="w-5 h-5" />
+                <IconCopy className="w-5 h-5" />
             </button>
             <button 
               onClick={() => setIsEditingTitle(true)}

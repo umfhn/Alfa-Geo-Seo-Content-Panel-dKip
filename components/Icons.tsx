@@ -21,7 +21,8 @@ export const IconCss: React.FC<{ className?: string }> = ({ className }) => <Ico
 export const IconEdit: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></Icon>;
 export const IconMonitor: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" /></Icon>;
 export const IconTablet: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18h3" /></Icon>;
-export const IconPhone: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18h3" transform="scale(0.8) translate(2, 2)" /></Icon>;
+// FIX: Wrapped path in a <g> tag to apply transform, which is more robust for SVG in JSX.
+export const IconPhone: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><g transform="scale(0.8) translate(2, 2)"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18h3" /></g></Icon>;
 export const IconArrowUp: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" /></Icon>;
 export const IconArrowDown: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></Icon>;
 export const IconPlay: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" /></Icon>;
@@ -39,7 +40,23 @@ export const IconKey: React.FC<{ className?: string }> = ({ className }) => <Ico
 
 
 // --- Layout Module Icons ---
-export const IconLayoutFrame: React.FC<{ className?: string, variant?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v16.5h16.5V3.75H3.75zM3.75 8.25h16.5m-16.5 7.5h16.5" /></Icon>;
+// FIX: The variant prop was unused. Implemented logic to show a different icon for each variant.
+export const IconLayoutFrame: React.FC<{ className?: string, variant?: string }> = ({ className, variant }) => {
+    let pathContent;
+    switch (variant) {
+        case 'F2': // Header-Fokus
+            pathContent = <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v16.5h16.5V3.75H3.75zM3.75 10h16.5" />;
+            break;
+        case 'F3': // Footer-Fokus
+            pathContent = <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v16.5h16.5V3.75H3.75zM3.75 14h16.5" />;
+            break;
+        case 'F1': // Standard
+        default:
+            pathContent = <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v16.5h16.5V3.75H3.75zM3.75 8.25h16.5m-16.5 7.5h16.5" />;
+            break;
+    }
+    return <Icon className={className}>{pathContent}</Icon>;
+};
 export const IconLayoutStack: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></Icon>;
 export const IconLayoutSplit: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h12v12H6z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12" /></Icon>;
 export const IconLayoutGrid: React.FC<{ className?: string }> = ({ className }) => <Icon className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></Icon>;

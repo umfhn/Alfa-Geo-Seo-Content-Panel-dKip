@@ -1,4 +1,4 @@
-
+// services/exportService.ts
 
 import type { Panel, CIColors, Geo, SectionLabels, ExportProfile, Job, SeoData, Faq } from '../types';
 import { generateSeoMetadataFromContent } from './geminiService';
@@ -214,8 +214,8 @@ function generateSinglePanelCleanHtml(panel: Panel, sectionLabels: SectionLabels
     </div>
     <div class="${p}sections">
         <h3 class="${p}section-title">${escapeHtml(sectionLabels.sections)}</h3>
-        ${panel.sections.map(section => `
-        <details class="${p}accordion" open>
+        ${panel.sections.map((section, sectionIndex) => `
+        <details class="${p}accordion"${sectionIndex === 0 ? ' open' : ''}>
             <summary class="${p}accordion__summary">${escapeHtml(section.title)}</summary>
             <div class="${p}accordion__content">
                 <ul>
@@ -345,6 +345,23 @@ export function generateExportBundle(
     };
 }
 
+export function generateSinglePanelExport(
+    panel: Panel,
+    outputFormat: 'onepage' | 'legacy',
+    legacyProfile: ExportProfile,
+    ciColors: CIColors,
+    sectionLabels: SectionLabels
+): string {
+    if (outputFormat === 'onepage') {
+        // For one-page mode, styles are global, so we just export the raw HTML.
+        return generateSinglePanelCleanHtml(panel, sectionLabels, 0);
+    } else {
+        // For legacy mode, generate a self-contained bundle with styles.
+        const bundle = generateExportBundle([panel], false, legacyProfile, ciColors, sectionLabels);
+        return bundle.combined || bundle.html || '';
+    }
+}
+
 // --- ONE-PAGE GENERATOR ---
 
 const onePageTemplate = `<!DOCTYPE html>
@@ -420,6 +437,53 @@ const onePageTemplate = `<!DOCTYPE html>
 </body>
 </html>`;
 
+const getOnePageCss = (ci_colors: CIColors): string => {
+    return `
+:root {
+  --dkip-primary: ${escapeHtml(ci_colors.primary)};
+  --dkip-secondary: ${escapeHtml(ci_colors.secondary)};
+  --dkip-accent: ${escapeHtml(ci_colors.accent)};
+  --dkip-text-primary: ${escapeHtml(ci_colors.text_primary)};
+  --dkip-text-secondary: ${escapeHtml(ci_colors.text_secondary)};
+  --dkip-font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --dkip-border-radius: 12px;
+}
+body { font-family: var(--dkip-font-family); background: var(--dkip-secondary); color: var(--dkip-text-primary); margin: 0; }
+.container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+header, nav, footer { background: rgba(255,255,255,0.03); border: 1px solid rgba(96,165,250,0.4); padding: 16px; border-radius: 12px; margin-bottom: 8px; }
+header .brand { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+header .subtitle { font-size: 0.9rem; color: var(--dkip-text-secondary); }
+main { display: block; background: rgba(0,0,0,0.08); min-height: 600px; box-sizing: border-box; border-radius: 12px; }
+.article { padding: 24px; }
+.contact-box { margin-top: 2.5rem; padding: 2rem; border-radius: var(--dkip-border-radius); background: rgba(0,0,0,0.2); text-align: center; border-top: 1px solid var(--dkip-accent); }
+.contact-box h3 { font-size: 1.5rem; margin-top: 0; margin-bottom: 1rem; color: var(--dkip-text-primary); }
+.contact-box p { margin-bottom: 1.5rem; }
+.contact-box p:last-child { margin-bottom: 0; }
+.contact-box a { color: var(--dkip-accent); text-decoration: none; }
+.contact-box .btn { color: #fff; }
+[data-dkip-scope], [data-dkip-scope] * { box-sizing: border-box; }
+.toc-list { margin: 0; padding-left: 1.25rem; }
+.toc-list a { color: var(--dkip-accent); text-decoration: none; }
+.toc-list a:hover { text-decoration: underline; }
+.btn { display: inline-block; padding: 0.6rem 1rem; border-radius: 9999px; background: var(--dkip-primary); color: #fff; text-decoration: none; font-weight: 600; }
+.btn:hover { opacity: .9; }
+.hero { position: relative; overflow: hidden; border-radius: var(--dkip-border-radius); margin-bottom: 8px; border: 1px solid rgba(96,165,250,0.4); }
+.hero picture, .hero img { display: block; width: 100%; height: clamp(220px, 35vw, 420px); object-fit: cover; }
+.hero__overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.45) 60%, rgba(0,0,0,.55) 100%); }
+.hero__content { position: absolute; left: 24px; bottom: 24px; right: 24px; display: grid; gap: 8px; }
+.hero__title { font-size: 2em; margin: 0; color: #fff;}
+.hero__subtitle { color: var(--dkip-text-secondary); margin: 0; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 2rem; }
+.gallery a { display:block; border-radius: var(--dkip-border-radius); overflow:hidden; border:1px solid rgba(127,127,127,0.25); }
+.gallery img { display:block; width:100%; height:160px; object-fit:cover; }
+        ` + getBaseCssRules(ci_colors);
+};
+
+export function generateOnePageCss(job: Job): string {
+    const { results } = job;
+    const { ci_colors } = results;
+    return getOnePageCss(ci_colors || defaultCIColors);
+}
 
 export function generateOnePageHtml(job: Job, options: { includeCss: boolean, forWp: boolean }): string {
     const { results } = job;
@@ -503,46 +567,7 @@ export function generateOnePageHtml(job: Job, options: { includeCss: boolean, fo
     }
 
     if(options.includeCss) {
-        const fullCss = `
-:root {
-  --dkip-primary: ${escapeHtml(ci_colors.primary)};
-  --dkip-secondary: ${escapeHtml(ci_colors.secondary)};
-  --dkip-accent: ${escapeHtml(ci_colors.accent)};
-  --dkip-text-primary: ${escapeHtml(ci_colors.text_primary)};
-  --dkip-text-secondary: ${escapeHtml(ci_colors.text_secondary)};
-  --dkip-font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --dkip-border-radius: 12px;
-}
-body { font-family: var(--dkip-font-family); background: var(--dkip-secondary); color: var(--dkip-text-primary); margin: 0; }
-.container { max-width: 1200px; margin: 0 auto; padding: 16px; }
-header, nav, footer { background: rgba(255,255,255,0.03); border: 1px solid rgba(96,165,250,0.4); padding: 16px; border-radius: 12px; margin-bottom: 8px; }
-header .brand { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-header .subtitle { font-size: 0.9rem; color: var(--dkip-text-secondary); }
-main { display: block; background: rgba(0,0,0,0.08); min-height: 600px; box-sizing: border-box; border-radius: 12px; }
-.article { padding: 24px; }
-.contact-box { margin-top: 2.5rem; padding: 2rem; border-radius: var(--dkip-border-radius); background: rgba(0,0,0,0.2); text-align: center; border-top: 1px solid var(--dkip-accent); }
-.contact-box h3 { font-size: 1.5rem; margin-top: 0; margin-bottom: 1rem; color: var(--dkip-text-primary); }
-.contact-box p { margin-bottom: 1.5rem; }
-.contact-box p:last-child { margin-bottom: 0; }
-.contact-box a { color: var(--dkip-accent); text-decoration: none; }
-.contact-box .btn { color: #fff; }
-[data-dkip-scope], [data-dkip-scope] * { box-sizing: border-box; }
-.toc-list { margin: 0; padding-left: 1.25rem; }
-.toc-list a { color: var(--dkip-accent); text-decoration: none; }
-.toc-list a:hover { text-decoration: underline; }
-.btn { display: inline-block; padding: 0.6rem 1rem; border-radius: 9999px; background: var(--dkip-primary); color: #fff; text-decoration: none; font-weight: 600; }
-.btn:hover { opacity: .9; }
-.hero { position: relative; overflow: hidden; border-radius: var(--dkip-border-radius); margin-bottom: 8px; border: 1px solid rgba(96,165,250,0.4); }
-.hero picture, .hero img { display: block; width: 100%; height: clamp(220px, 35vw, 420px); object-fit: cover; }
-.hero__overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.45) 60%, rgba(0,0,0,.55) 100%); }
-.hero__content { position: absolute; left: 24px; bottom: 24px; right: 24px; display: grid; gap: 8px; }
-.hero__title { font-size: 2em; margin: 0; color: #fff;}
-.hero__subtitle { color: var(--dkip-text-secondary); margin: 0; }
-.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 2rem; }
-.gallery a { display:block; border-radius: var(--dkip-border-radius); overflow:hidden; border:1px solid rgba(127,127,127,0.25); }
-.gallery img { display:block; width:100%; height:160px; object-fit:cover; }
-        ` + getBaseCssRules(ci_colors);
-        finalHtml = finalHtml.replace('__HEAD_CSS__', fullCss);
+        finalHtml = finalHtml.replace('__HEAD_CSS__', getOnePageCss(ci_colors));
     } else {
         finalHtml = finalHtml.replace(/<style>[\s\S]*?<\/style>/, '');
     }

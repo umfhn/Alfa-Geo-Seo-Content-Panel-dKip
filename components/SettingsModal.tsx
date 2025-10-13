@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, ChangeEvent } from 'react';
 import type { Sixpack, VCardData, Meta, Geo } from '../types';
 import { IconDownload, IconCopy, IconVCard } from './Icons';
@@ -157,7 +156,7 @@ END:VCARD`;
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 bg-brand-primary/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="absolute inset-0 bg-black/60 z-50 flex items-start justify-center p-4 pt-20" onClick={onClose}>
       <div className="bg-brand-secondary rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center p-4 border-b border-brand-accent/20">
           <h2 className="text-xl font-bold">Einstellungen & Export</h2>

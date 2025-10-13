@@ -45,6 +45,65 @@ const TokenInput: React.FC<{ label: string; type: string; name: keyof LayoutToke
     </div>
 );
 
+// FIX: Moved editorStyles before the component declaration to fix a ReferenceError.
+const editorStyles = `
+.dkip-layout-editor__container {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 2rem;
+  background-color: var(--brand-primary);
+  padding: 1rem;
+  border-radius: 1rem;
+}
+.dkip-layout-editor__controls {
+  background-color: var(--brand-secondary);
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 80vh;
+  overflow-y: auto;
+}
+.dkip-layout-editor__title { font-size: 1.5rem; font-weight: bold; text-align: center; }
+.dkip-layout-editor__subtitle { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; border-bottom: 1px solid var(--brand-primary); padding-bottom: 0.5rem; }
+.dkip-layout-editor__label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--brand-text-secondary); }
+.dkip-layout-editor__input {
+  width: 100%;
+  background-color: var(--brand-primary);
+  border: 1px solid var(--brand-accent-hover);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--brand-text);
+  transition: all 0.2s;
+}
+/* FIX: Removed invalid CSS property "ring: 2px;". The box-shadow property already provides the focus ring effect. */
+.dkip-layout-editor__input:focus { outline: none; border-color: var(--brand-accent); box-shadow: 0 0 0 2px var(--brand-accent); }
+.dkip-layout-editor__visual-group { display: flex; gap: 0.5rem; }
+.dkip-layout-editor__visual-btn { background-color: var(--brand-primary); border: 2px solid transparent; border-radius: 0.375rem; padding: 0.5rem; cursor: pointer; transition: all 0.2s; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.dkip-layout-editor__visual-btn svg { width: 32px; height: 32px; }
+.dkip-layout-editor__visual-btn:hover { border-color: var(--brand-accent-hover); }
+.dkip-layout-editor__visual-btn--active { border-color: var(--brand-accent); background-color: var(--brand-accent-hover); }
+.dkip-layout-editor__visual-label { font-size: 0.75rem; color: var(--brand-text-secondary); }
+.dkip-layout-editor__visual-btn--active .dkip-layout-editor__visual-label { color: var(--brand-text); }
+.dkip-layout-editor__toggles { display: flex; gap: 1rem; align-items: center; justify-content: center; }
+.dkip-layout-editor__toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+.dkip-layout-editor__token-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.dkip-layout-editor__token { display: flex; align-items: center; justify-content: space-between; }
+.dkip-layout-editor__token-label { font-size: 0.8rem; color: var(--brand-text-secondary); }
+.dkip-layout-editor__input--token { width: auto; max-width: 100px; }
+input[type="color"] { padding: 2px; height: 38px; }
+.dkip-layout-editor__repeater { display: flex; flex-direction: column; gap: 0.75rem; }
+.dkip-layout-editor__repeater-item { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; align-items: center; background-color: var(--brand-primary); padding: 0.5rem; border-radius: 0.25rem; }
+.dkip-layout-editor__repeater-item > input:nth-child(1), .dkip-layout-editor__repeater-item > input:nth-child(2) { grid-column: span 2; }
+.dkip-layout-editor__btn-icon { background: none; border: none; color: var(--brand-text-secondary); cursor: pointer; padding: 0.5rem; }
+.dkip-layout-editor__btn-icon:hover { color: var(--brand-accent); }
+.dkip-layout-editor__btn-add { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; padding: 0.5rem; margin-top: 0.5rem; background-color: var(--brand-accent-hover); border-radius: 0.25rem; }
+.dkip-layout-editor__io { display: flex; gap: 1rem; }
+.dkip-layout-editor__btn { flex: 1; padding: 0.75rem; background-color: var(--brand-accent); color: white; border: none; border-radius: 0.375rem; font-weight: bold; cursor: pointer; }
+.dkip-layout-editor__preview { display: flex; align-items: center; justify-content: center; background-color: var(--brand-secondary); border-radius: 0.5rem; }
+`;
+
 export const LayoutModule: React.FC = () => {
   const [config, setConfig] = useState<LayoutConfig>(defaultLayoutConfig);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -190,60 +249,3 @@ export const LayoutModule: React.FC = () => {
     </>
   );
 };
-
-const editorStyles = `
-.dkip-layout-editor__container {
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: 2rem;
-  background-color: var(--brand-primary);
-  padding: 1rem;
-  border-radius: 1rem;
-}
-.dkip-layout-editor__controls {
-  background-color: var(--brand-secondary);
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  height: 80vh;
-  overflow-y: auto;
-}
-.dkip-layout-editor__title { font-size: 1.5rem; font-weight: bold; text-align: center; }
-.dkip-layout-editor__subtitle { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; border-bottom: 1px solid var(--brand-primary); padding-bottom: 0.5rem; }
-.dkip-layout-editor__label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--brand-text-secondary); }
-.dkip-layout-editor__input {
-  width: 100%;
-  background-color: var(--brand-primary);
-  border: 1px solid var(--brand-accent-hover);
-  border-radius: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  color: var(--brand-text);
-  transition: all 0.2s;
-}
-.dkip-layout-editor__input:focus { outline: none; ring: 2px; border-color: var(--brand-accent); box-shadow: 0 0 0 2px var(--brand-accent); }
-.dkip-layout-editor__visual-group { display: flex; gap: 0.5rem; }
-.dkip-layout-editor__visual-btn { background-color: var(--brand-primary); border: 2px solid transparent; border-radius: 0.375rem; padding: 0.5rem; cursor: pointer; transition: all 0.2s; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
-.dkip-layout-editor__visual-btn svg { width: 32px; height: 32px; }
-.dkip-layout-editor__visual-btn:hover { border-color: var(--brand-accent-hover); }
-.dkip-layout-editor__visual-btn--active { border-color: var(--brand-accent); background-color: var(--brand-accent-hover); }
-.dkip-layout-editor__visual-label { font-size: 0.75rem; color: var(--brand-text-secondary); }
-.dkip-layout-editor__visual-btn--active .dkip-layout-editor__visual-label { color: var(--brand-text); }
-.dkip-layout-editor__toggles { display: flex; gap: 1rem; align-items: center; justify-content: center; }
-.dkip-layout-editor__toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
-.dkip-layout-editor__token-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-.dkip-layout-editor__token { display: flex; align-items: center; justify-content: space-between; }
-.dkip-layout-editor__token-label { font-size: 0.8rem; color: var(--brand-text-secondary); }
-.dkip-layout-editor__input--token { width: auto; max-width: 100px; }
-input[type="color"] { padding: 2px; height: 38px; }
-.dkip-layout-editor__repeater { display: flex; flex-direction: column; gap: 0.75rem; }
-.dkip-layout-editor__repeater-item { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; align-items: center; background-color: var(--brand-primary); padding: 0.5rem; border-radius: 0.25rem; }
-.dkip-layout-editor__repeater-item > input:nth-child(1), .dkip-layout-editor__repeater-item > input:nth-child(2) { grid-column: span 2; }
-.dkip-layout-editor__btn-icon { background: none; border: none; color: var(--brand-text-secondary); cursor: pointer; padding: 0.5rem; }
-.dkip-layout-editor__btn-icon:hover { color: var(--brand-accent); }
-.dkip-layout-editor__btn-add { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; padding: 0.5rem; margin-top: 0.5rem; background-color: var(--brand-accent-hover); border-radius: 0.25rem; }
-.dkip-layout-editor__io { display: flex; gap: 1rem; }
-.dkip-layout-editor__btn { flex: 1; padding: 0.75rem; background-color: var(--brand-accent); color: white; border: none; border-radius: 0.375rem; font-weight: bold; cursor: pointer; }
-.dkip-layout-editor__preview { display: flex; align-items: center; justify-content: center; background-color: var(--brand-secondary); border-radius: 0.5rem; }
-`;
