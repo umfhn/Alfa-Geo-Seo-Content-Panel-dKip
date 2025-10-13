@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, ChangeEvent } from 'react';
 import type { Sixpack, VCardData, Meta, Geo } from '../types';
 import { IconDownload, IconCopy, IconVCard } from './Icons';
@@ -75,11 +76,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
     if (isOpen && sixpack) {
       // FIX: Correctly destructure `geo` and `topic` from `sixpack.results`.
       const { results } = sixpack;
-      const { geo, topic } = results;
+      const { geo } = results;
       
       // FIX: Reliably source all vCard data from the `geo` object.
       setVCardData({
-        company: geo.companyName || topic || '',
+        // FIX: The job topic is not a valid fallback for the company name.
+        // Rely solely on the geo object for the company name.
+        company: geo.companyName || '',
         branch: geo.branch || '',
         phone: geo.phone || '',
         email: geo.email || '',

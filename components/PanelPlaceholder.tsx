@@ -15,8 +15,9 @@ export const PanelPlaceholder: React.FC<PanelPlaceholderProps> = ({ index, statu
   const [regenerationProgress, setRegenerationProgress] = useState(0);
 
   const isGeneratingThisPanel = status === 'pending' && job && job.state === 'running' && job.step.kind === 'panel' && job.step.index === index;
-  // A regeneration step is identified by its specific description.
-  const isRegeneration = isGeneratingThisPanel && job.step.description.includes('neu generiert');
+  // FIX: The original check for regeneration was brittle and incorrect. This new logic robustly infers
+  // a regeneration by checking if this panel is generating while other panels are already complete.
+  const isRegeneration = isGeneratingThisPanel && job.results.panels.some(p => p.status === 'ok');
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;

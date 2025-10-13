@@ -8,6 +8,7 @@ import { Loader } from './components/Loader';
 import { SettingsModal } from './components/SettingsModal';
 import { SystemCheckPanel } from './components/SystemCheckPanel';
 import { LayoutModule } from './components/LayoutModule';
+import { ConnectCardGenerator } from './components/ConnectCardGenerator'; // New Import
 import { startJob, getJobStatus, controlJob, getTopicSuggestions, initJobFromStorage, clearPersistedJob } from './services/jobService';
 // FIX: Removed API key management from UI. The key is now handled via environment variables as per guidelines.
 // FIX: Unused import `runAIPing` removed.
@@ -16,14 +17,14 @@ import type { UserInput, Job, Warning, SeoData } from './types';
 import { FLAGS } from './flags';
 import { initI18n } from './i18n';
 
-type AppView = 'form' | 'job' | 'system_check' | 'layout_module';
+type AppView = 'form' | 'job' | 'system_check' | 'layout_module' | 'generator';
 
 const App: React.FC = () => {
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAutoRun, setIsAutoRun] = useState<boolean>(true);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
-  const [view, setView] = useState<AppView>('form');
+  const [view, setView] = useState<AppView>('generator');
   const [topicSuggestions, setTopicSuggestions] = useState<string[]>([]);
   const [validationState, setValidationState] = useState<{ isValid: boolean; errorCount: number; warnCount: number; warnings: Warning[] }>({ isValid: true, errorCount: 0, warnCount: 0, warnings: [] });
   
@@ -155,15 +156,15 @@ const App: React.FC = () => {
       <Header 
         onSettingsClick={() => setIsSettingsModalOpen(true)}
         onSystemCheckClick={() => setView('system_check')}
+        activeView={view}
+        onNavigate={setView}
       />
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {view === 'form' && (
-          <>
-            <div className="text-center mb-8">
-              <button onClick={() => setView('layout_module')} className="text-brand-accent hover:underline">Go to Layout Module Editor</button>
-            </div>
-            <InputForm onGenerate={handleGenerate} isLoading={job?.state === 'running' || job?.state === 'queued'} onValidationChange={setValidationState} />
-          </>
+          <InputForm onGenerate={handleGenerate} isLoading={job?.state === 'running' || job?.state === 'queued'} onValidationChange={setValidationState} />
+        )}
+        {view === 'generator' && (
+          <ConnectCardGenerator />
         )}
         {view === 'job' && job && (
           <>
@@ -215,7 +216,7 @@ const App: React.FC = () => {
         )}
         {view === 'layout_module' && (
            <div>
-               <button onClick={() => setView('form')} className="mb-4 text-brand-accent hover:underline">&larr; Zurück zum Formular</button>
+               <button onClick={() => setView('form')} className="mb-4 text-brand-accent hover:underline">&larr; Zurück zum Layout-Modul</button>
                <LayoutModule />
             </div>
         )}

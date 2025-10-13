@@ -24,7 +24,8 @@ export const useTextToSpeech = (text: string) => {
   }, []);
 
   const stop = useCallback(() => {
-    if (window.speechSynthesis.speaking) {
+    // FIX: Ensure cancel is called whether speaking or paused to fully reset the synthesis engine.
+    if (window.speechSynthesis.speaking || window.speechSynthesis.paused) {
       window.speechSynthesis.cancel();
     }
     setIsPlaying(false);
@@ -96,22 +97,29 @@ export const useTextToSpeech = (text: string) => {
   }, [stop, voices]);
 
   const play = useCallback(() => {
+    // FIX: Simplified and clarified play/resume logic to be more robust.
+    // If we are in a paused state (controlled by our own state), just resume.
     if (isPlaying && isPaused) {
       window.speechSynthesis.resume();
       setIsPaused(false);
-    } else {
-       // It's possible for speech synthesis to be in a "paused" state from a previous session
-      // on page load. Resume clears this state. Then we stop to ensure a clean start.
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      }
-      stop(); // Stop any previous speech before starting new
-      setIsPlaying(true);
-      setIsPaused(false);
-      currentSentenceIndexRef.current = 0;
-      speakSentence(0);
+      return;
     }
-  }, [isPlaying, isPaused, stop, speakSentence]);
+    
+    // Otherwise, start from the beginning. This handles both starting fresh
+    // and restarting if play is clicked while already playing.
+    
+    // Stop any currently active or paused speech synthesis to ensure a clean slate.
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
+
+    // The 'onend' callback for the utterance that was just cancelled might not have fired yet.
+    // So, we manually reset the state here to ensure a clean start.
+    setIsPlaying(true);
+    setIsPaused(false);
+    currentSentenceIndexRef.current = 0;
+    speakSentence(0);
+  }, [isPlaying, isPaused, speakSentence]);
 
   const pause = useCallback(() => {
     if (isPlaying && !isPaused) {

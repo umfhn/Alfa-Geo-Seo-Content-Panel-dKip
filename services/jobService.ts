@@ -263,9 +263,40 @@ export const controlJob = async (jobId: string, action: 'resume' | 'pause' | 'ne
         case 'pause': if (job.state === 'running') job.state = 'paused'; break;
         case 'resume': if (job.state === 'paused') { job.state = 'running'; runJob(jobId); } break;
         case 'cancel': job.state = 'error'; job.lastError = { code: 'CANCELLED', message: 'Job vom Benutzer abgebrochen.', atStep: job.step.kind }; break;
+        // FIX: The 'run_linter' action was previously using dummy data. It has been updated to execute the actual linter service,
+        // providing real-time, accurate linting results for all panels and updating the job state accordingly.
         case 'run_linter':
-             job.results.panels.forEach(p => { if (p.panel) { p.linting_results = createDummyLintingResults(p.panel); } });
-             await new Promise(res => setTimeout(res, 300));
+            if (FLAGS.LINTER_MVP) {
+                job.results.panels.forEach(p => {
+                    if (p.panel) {
+                        const panelIssues = lintPanel(p.panel, job.results.geo?.city, job.results.geo?.region);
+                        // Preserve existing breakdown but update geo score
+                        const oldBreakdown = p.linting_results?.quality_score_breakdown || createDummyLintingResults(p.panel).quality_score_breakdown!;
+                        p.linting_results = {
+                            passed: !panelIssues.some(i => i.severity === 'ERROR'),
+                            has_warnings: panelIssues.some(i => i.severity === 'WARN'),
+                            issues: panelIssues,
+                            similarity_score: p.linting_results?.similarity_score || 0.1, // Preserve old score
+                            content_hash: calculatePanelContentHash(p.panel), // Recalculate hash
+                            quality_score_breakdown: {
+                                ...oldBreakdown,
+                                geo_integration: { score: panelIssues.some(i => i.code === 'TITLE_NO_GEO') ? 70 : 98, weight: 0.2 },
+                            }
+                        };
+                        // Recalculate total quality score
+                        p.quality_score = Math.round(Object.values(p.linting_results.quality_score_breakdown || {}).reduce((acc, curr) => acc + curr.score * curr.weight, 0));
+                    }
+                });
+                // Also re-lint the whole set for keyword duplications
+                const successfulPanels = job.results.panels
+                    .filter(p => p.status === 'ok' && p.panel)
+                    .map(p => p.panel!);
+                job.results.lintSummary = lintSetKeywordDups(successfulPanels);
+            } else {
+                // Fallback to dummy results if LINTER_MVP is off
+                job.results.panels.forEach(p => { if (p.panel) { p.linting_results = createDummyLintingResults(p.panel); } });
+            }
+            await new Promise(res => setTimeout(res, 300)); // Simulate async work
             break;
         // FIX: Implement missing control actions
         case 'regenerate_panel':

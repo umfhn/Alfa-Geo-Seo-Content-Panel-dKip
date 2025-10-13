@@ -1,3 +1,4 @@
+
 // types.ts
 
 // --- Basic Enums & Types for User Input ---
@@ -517,4 +518,60 @@ export interface FormDraft {
     timestamp: number;
     appVersion: string;
     schemaVersion: string;
+}
+
+// --- Connect-Card Generator Types ---
+
+export interface ConnectCardAddress {
+  street: string;
+  postalCode: string;
+  city: string;
+  region: string;
+  country: string;
+}
+
+export type SocialType = 'linkedin' | 'instagram' | 'facebook' | 'x' | 'youtube' | 'tiktok' | 'github' | 'xing';
+
+export interface SocialLink {
+  id: string;
+  type: SocialType;
+  url: string;
+}
+
+export interface ConnectCardFeatures {
+  website: boolean;
+  call: boolean;
+  email: boolean;
+  vcard: boolean;
+  qr: boolean;
+  copyLink: boolean;
+  share: boolean;
+  address: boolean;
+  hours: boolean;
+  socials: boolean;
+  legal: boolean;
+}
+
+export interface ConnectCardTheme {
+  accent: string;
+  radius: number;
+  elevation: 'none' | 's' | 'm' | 'l';
+}
+
+export interface ConnectCardData {
+  name: string;
+  tagline: string;
+  url: string;
+  phone: string;
+  email: string;
+  address: ConnectCardAddress;
+  hours: string;
+  socials: SocialLink[];
+  legal: {
+    imprint: string;
+    privacy: string;
+  };
+  qrUrl: string;
+  features: ConnectCardFeatures;
+  theme: ConnectCardTheme;
 }
