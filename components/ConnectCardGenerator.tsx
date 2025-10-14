@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import type { ConnectCardData, ConnectCardFeatures, SocialType, SocialLink } from '../types';
 import { ConnectCardPreview } from './ConnectCardPreview';
@@ -95,7 +96,7 @@ const escapeHtml = (unsafe: string): string => {
 const getIconSvg = (iconName: string): string => {
     const icons: Record<string, string> = {
         website: '<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-4.5 0V6M18 6h-3m3 0h-3m0 0V3" />',
-        phone: '<g transform="scale(0.8) translate(3, 3)"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 6.75z" /></g>',
+        phone: '<g transform="scale(0.8) translate(2, 2)"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 6.75z" /></g>',
         mail: '<path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />',
         vcard: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />',
         copy: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5 .124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />',
@@ -106,78 +107,115 @@ const getIconSvg = (iconName: string): string => {
     };
     const path = icons[iconName];
     if (!path) return '';
+    const className = "ccg-icon"; // Prefixed class
     if (iconName === 'instagram' || iconName === 'linkedin') {
-        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon">${path}</svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="${className}">${path}</svg>`;
     }
-    return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon">${path}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="${className}">${path}</svg>`;
 };
 
-const generateConnectCardCss = (theme: ConnectCardData['theme']): string => {
+const generateConnectCardCss = (theme: ConnectCardData['theme'], options: { standalone?: boolean } = {}): string => {
+    const { standalone = true } = options;
+    const bodyCss = standalone ? `
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #1A1A2E; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 2rem; box-sizing: border-box; }` : '';
+    
+    const standaloneContainerCss = standalone ? `
+        max-height: 90vh;
+        overflow-y: auto;` : '';
+        
+    const scrollbarCss = standalone ? `
+      .ccg-card-container::-webkit-scrollbar { width: 8px; }
+      .ccg-card-container::-webkit-scrollbar-track { background: var(--ccg-secondary); }
+      .ccg-card-container::-webkit-scrollbar-thumb { background-color: var(--ccg-accent); border-radius: 10px; border: 2px solid var(--ccg-secondary); }
+      .ccg-card-container { scrollbar-width: thin; scrollbar-color: var(--ccg-accent) var(--ccg-secondary); }` : '';
+
     return `
-      :root {
-        --brand-primary: #0D0D1A; --brand-secondary: #1A1A2E; --brand-accent: ${escapeHtml(theme.accent)};
-        --brand-text: #EAEAEA; --brand-text-secondary: #A9A9A9; --card-radius: ${theme.radius}px;
+      .ccg-card-container {
+        --ccg-primary: #0D0D1A; 
+        --ccg-secondary: #1A1A2E; 
+        --ccg-accent: ${escapeHtml(theme.accent)};
+        --ccg-text: #EAEAEA; 
+        --ccg-text-secondary: #A9A9A9; 
+        --ccg-card-radius: ${theme.radius}px;
+        background-color: var(--ccg-primary); 
+        color: var(--ccg-text); 
+        padding: 1rem; 
+        border-radius: calc(var(--ccg-card-radius) * 1.5); 
+        border: 2px solid var(--ccg-secondary); 
+        max-width: 24rem; 
+        width: 100%; 
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        ${standaloneContainerCss}
       }
-      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--brand-secondary); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 2rem; box-sizing: border-box; }
-      .card-container { background-color: var(--brand-primary); color: var(--brand-text); padding: 1rem; border-radius: calc(var(--card-radius) * 1.5); border: 2px solid var(--brand-secondary); max-width: 24rem; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
-      .card-content { display: flex; flex-direction: column; gap: 1rem; }
-      .header { text-align: center; } .header h2 { font-size: 1.5rem; font-weight: 700; margin: 0; }
-      .header p { color: var(--brand-text-secondary); font-size: 0.875rem; margin: 0.25rem 0 0 0; }
-      .button-group { display: flex; flex-direction: column; gap: 0.5rem; }
-      .action-button { background-color: var(--brand-secondary); padding: 0.75rem; border-radius: var(--card-radius); display: flex; align-items: center; width: 100%; text-align: left; text-decoration: none; color: inherit; transition: background-color 0.2s; }
-      .action-button:hover { background-color: #2a2a3e; } .icon { width: 1.5rem; height: 1.5rem; margin-right: 0.75rem; }
-      .side-icon { margin-left: 0.75rem; color: var(--brand-text-secondary); } .button-label { flex-grow: 1; font-weight: 500; }
-      .qr-container { background-color: white; padding: 0.75rem; border-radius: var(--card-radius); margin: 0 auto; max-width: 200px; }
-      .qr-container img { display: block; width: 100%; height: auto; } .divider { border-color: var(--brand-secondary); }
-      .info-group { display: flex; flex-direction: column; gap: 0.75rem; }
-      .info-line { display: flex; align-items: center; font-size: 0.875rem; }
-      .info-line .icon { width: 1.25rem; height: 1.25rem; color: var(--brand-text-secondary); }
-      .social-group { display: flex; justify-content: center; align-items: center; gap: 1rem; padding-top: 0.5rem; }
-      .social-group a { color: var(--brand-text-secondary); transition: color 0.2s; } .social-group a:hover { color: white; }
-      .social-group .icon { width: 2rem; height: 2rem; margin: 0; }
-      .footer { text-align: center; font-size: 0.75rem; color: var(--brand-text-secondary); padding-top: 0.5rem; border-top: 1px solid var(--brand-secondary); }
-      .footer p { margin: 0.25rem 0; } .footer a { color: inherit; text-decoration: none; } .footer a:hover { text-decoration: underline; }
-    `.replace(/\s\s+/g, ' ');
+      ${bodyCss}
+      ${scrollbarCss}
+      .ccg-card-container * { box-sizing: border-box; }
+      .ccg-card-content { display: flex; flex-direction: column; gap: 1rem; }
+      .ccg-header { text-align: center; } 
+      .ccg-header h2 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+      .ccg-header p { color: var(--ccg-text-secondary); font-size: 0.875rem; margin: 0.25rem 0 0 0; }
+      .ccg-button-group { display: flex; flex-direction: column; gap: 0.5rem; }
+      .ccg-action-button { background-color: var(--ccg-secondary); padding: 0.75rem; border-radius: var(--ccg-card-radius); display: flex; align-items: center; width: 100%; text-align: left; text-decoration: none; color: inherit; transition: background-color 0.2s; }
+      .ccg-action-button:hover { background-color: #2a2a3e; } 
+      .ccg-icon { width: 1.5rem; height: 1.5rem; margin-right: 0.75rem; }
+      .ccg-side-icon { margin-left: auto; color: var(--ccg-text-secondary); } 
+      .ccg-button-label { flex-grow: 1; font-weight: 500; }
+      .ccg-qr-container { background-color: white; padding: 0.75rem; border-radius: var(--ccg-card-radius); margin: 0 auto; max-width: 200px; }
+      .ccg-qr-container img { display: block; width: 100%; height: auto; } 
+      .ccg-divider { border: 0; height: 1px; background-color: var(--ccg-secondary); margin: 0; }
+      .ccg-info-group { display: flex; flex-direction: column; gap: 0.75rem; }
+      .ccg-info-line { display: flex; align-items: center; font-size: 0.875rem; }
+      .ccg-info-line .ccg-icon { width: 1.25rem; height: 1.25rem; color: var(--ccg-text-secondary); }
+      .ccg-social-group { display: flex; justify-content: center; align-items: center; gap: 1rem; padding-top: 0.5rem; }
+      .ccg-social-group a { color: var(--ccg-text-secondary); transition: color 0.2s; } 
+      .ccg-social-group a:hover { color: white; }
+      .ccg-social-group .ccg-icon { width: 2rem; height: 2rem; margin: 0; }
+      .ccg-footer { text-align: center; font-size: 0.75rem; color: var(--ccg-text-secondary); padding-top: 0.5rem; border-top: 1px solid var(--ccg-secondary); }
+      .ccg-footer p { margin: 0.25rem 0; } 
+      .ccg-footer a { color: inherit; text-decoration: none; } 
+      .ccg-footer a:hover { text-decoration: underline; }
+    `.replace(/\s\s+/g, ' ').trim();
 };
 
 const generateConnectCardBodyHtml = (cardData: ConnectCardData): string => {
     const { name, tagline, url, phone, email, address, hours, socials, legal, qrUrl, features } = cardData;
 
     const actionButton = (label: string, href: string, iconName: string, sideIconName?: string) => `
-        <a href="${escapeHtml(href)}" class="action-button">
-            ${getIconSvg(iconName)} <span class="button-label">${escapeHtml(label)}</span>
-            ${sideIconName ? `<span class="side-icon">${getIconSvg(sideIconName)}</span>` : ''}
+        <a href="${escapeHtml(href)}" class="ccg-action-button">
+            ${getIconSvg(iconName)} <span class="ccg-button-label">${escapeHtml(label)}</span>
+            ${sideIconName ? `<span class="ccg-side-icon">${getIconSvg(sideIconName)}</span>` : ''}
         </a>`;
     
     const fullAddress = [address.street, address.city].filter(Boolean).join(', ');
 
     return `
-        <div class="card-container">
-            <div class="card-content">
-                <div class="header">
+        <div class="ccg-card-container">
+            <div class="ccg-card-content">
+                <div class="ccg-header">
                     <h2>${escapeHtml(name) || "Muster GmbH"}</h2>
                     <p>${escapeHtml(tagline) || "Automatisierung einfach gemacht"}</p>
                 </div>
-                <div class="button-group">
+                <div class="ccg-button-group">
                     ${features.website && url ? actionButton("Website öffnen", url, 'website') : ''}
                     ${features.call && phone ? actionButton("Anrufen", `tel:${phone}`, 'phone', 'copy') : ''}
                     ${features.email && email ? actionButton("E-Mail senden", `mailto:${email}`, 'mail', 'copy') : ''}
-                    ${features.vcard && name ? `<a href="#" class="action-button">${getIconSvg('vcard')} <span class="button-label">vCard herunterladen</span></a>` : ''}
+                    ${features.vcard && name ? `<a href="#" class="ccg-action-button">${getIconSvg('vcard')} <span class="ccg-button-label">vCard herunterladen</span></a>` : ''}
                 </div>
-                ${features.qr && qrUrl ? `<div class="qr-container"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=FFFFFF&color=000000&qzone=1" alt="QR Code for ${escapeHtml(name)}" /></div>` : ''}
-                ${features.copyLink && url ? `<a href="#" class="action-button">${getIconSvg('copy')} <span class="button-label">Link kopieren</span></a>` : ''}
-                ${(features.address && fullAddress) || (features.hours && hours) ? `<hr class="divider" />` : ''}
-                <div class="info-group">
-                    ${features.address && fullAddress ? `<div class="info-line">${getIconSvg('building')} <span>${escapeHtml(fullAddress)}</span></div>` : ''}
-                    ${features.hours && hours ? `<div class="info-line">${getIconSvg('clock')} <span>${escapeHtml(hours)}</span></div>` : ''}
+                ${features.qr && qrUrl ? `<div class="ccg-qr-container"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=FFFFFF&color=000000&qzone=1" alt="QR Code for ${escapeHtml(name)}" /></div>` : ''}
+                ${features.copyLink && url ? `<a href="#" class="ccg-action-button">${getIconSvg('copy')} <span class="ccg-button-label">Link kopieren</span></a>` : ''}
+                ${(features.address && fullAddress) || (features.hours && hours) ? `<hr class="ccg-divider" />` : ''}
+                <div class="ccg-info-group">
+                    ${features.address && fullAddress ? `<div class="ccg-info-line">${getIconSvg('building')} <span>${escapeHtml(fullAddress)}</span></div>` : ''}
+                    ${features.hours && hours ? `<div class="ccg-info-line">${getIconSvg('clock')} <span>${escapeHtml(hours)}</span></div>` : ''}
                 </div>
                 ${features.socials && socials.length > 0 ? `
-                    <div class="social-group">
+                    <div class="ccg-social-group">
                         ${socials.map(s => `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">${getIconSvg(s.type)}</a>`).join('')}
                     </div>
                 ` : ''}
                 ${features.legal && (legal.imprint || legal.privacy) ? `
-                    <div class="footer">
+                    <div class="ccg-footer">
                         <p><strong>${escapeHtml(name)}</strong></p>
                         <p>
                             ${legal.imprint ? `<a href="${escapeHtml(legal.imprint)}">Impressum</a>` : ''}
@@ -189,7 +227,6 @@ const generateConnectCardBodyHtml = (cardData: ConnectCardData): string => {
             </div>
         </div>`;
 };
-
 // --- End of Generation Helpers ---
 
 
@@ -261,7 +298,7 @@ export const ConnectCardGenerator: React.FC = () => {
     };
 
     const generateConnectCardHtml = useCallback((cardData: ConnectCardData): string => {
-        const css = generateConnectCardCss(cardData.theme);
+        const css = generateConnectCardCss(cardData.theme, { standalone: true });
         const bodyHtml = generateConnectCardBodyHtml(cardData);
 
         return `
@@ -315,7 +352,7 @@ export const ConnectCardGenerator: React.FC = () => {
     }, [data]);
 
     const handleCopyCssOnly = useCallback(() => {
-        const css = generateConnectCardCss(data.theme);
+        const css = generateConnectCardCss(data.theme, { standalone: false });
         navigator.clipboard.writeText(css).then(() => {
             setToast('Nur CSS-Code in die Zwischenablage kopiert!');
         }).catch(err => {

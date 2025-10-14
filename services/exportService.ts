@@ -242,7 +242,8 @@ function generateSinglePanelCleanHtml(panel: Panel, sectionLabels: SectionLabels
     </details>` : ''}
 </div>`.trim();
 
-    return `<section id="${panelId}" class="${p}panel" data-dkip-scope>\n    ${panelContentHtml}\n</section>`;
+    // FIX: Removed redundant data-dkip-scope attribute, as the parent container already handles CSS scoping.
+    return `<section id="${panelId}" class="${p}panel">\n    ${panelContentHtml}\n</section>`;
 }
 
 export interface ExportBundle {
