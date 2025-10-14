@@ -51,8 +51,11 @@ export const PanelPlaceholder: React.FC<PanelPlaceholderProps> = ({ index, statu
           } else {
             // Original calculation for the initial batch run
             const panelCount = job.step.of || 6;
-            const prePanelProgress = 20; // Progress before panels start (profiling, topics)
-            const totalPanelProgressRange = 90 - prePanelProgress; // Total % allocated for all panels
+            
+            // FIX: Aligned progress calculation with the logic in jobService.ts to ensure accuracy.
+            // The job service allocates progress from 15% to 95% (an 80-point range) for panel generation.
+            const prePanelProgress = 15; // Starting progress when panel generation begins
+            const totalPanelProgressRange = 80; // Total percentage points allocated for all panels
             const progressPerPanel = totalPanelProgressRange / panelCount;
             const panelStartProgress = prePanelProgress + index * progressPerPanel;
             

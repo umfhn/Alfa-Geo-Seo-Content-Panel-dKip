@@ -81,6 +81,8 @@ const dummyData: ConnectCardData = {
     theme: { accent: "#1F51FF", radius: 12, elevation: 'm' }
 };
 
+// --- Start of Generation Helpers ---
+
 const escapeHtml = (unsafe: string): string => {
     return unsafe
          .replace(/&/g, "&amp;")
@@ -96,7 +98,7 @@ const getIconSvg = (iconName: string): string => {
         phone: '<g transform="scale(0.8) translate(3, 3)"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 6.75z" /></g>',
         mail: '<path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />',
         vcard: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />',
-        copy: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />',
+        copy: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5 .124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />',
         building: '<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6M9 11.25h6M9 15.75h6" />',
         clock: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />',
         linkedin: '<path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.25 6.5 1.75 1.75 0 016.5 8.25zM19 19h-3v-4.75c0-1.4-1.2-2.5-2.5-2.5S11 12.85 11 14.25V19h-3v-9h2.9v1.3a3.1 3.1 0 012.6-1.3c2.5 0 4.5 2.2 4.5 5v4z" />',
@@ -109,6 +111,86 @@ const getIconSvg = (iconName: string): string => {
     }
     return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon">${path}</svg>`;
 };
+
+const generateConnectCardCss = (theme: ConnectCardData['theme']): string => {
+    return `
+      :root {
+        --brand-primary: #0D0D1A; --brand-secondary: #1A1A2E; --brand-accent: ${escapeHtml(theme.accent)};
+        --brand-text: #EAEAEA; --brand-text-secondary: #A9A9A9; --card-radius: ${theme.radius}px;
+      }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--brand-secondary); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 2rem; box-sizing: border-box; }
+      .card-container { background-color: var(--brand-primary); color: var(--brand-text); padding: 1rem; border-radius: calc(var(--card-radius) * 1.5); border: 2px solid var(--brand-secondary); max-width: 24rem; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
+      .card-content { display: flex; flex-direction: column; gap: 1rem; }
+      .header { text-align: center; } .header h2 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+      .header p { color: var(--brand-text-secondary); font-size: 0.875rem; margin: 0.25rem 0 0 0; }
+      .button-group { display: flex; flex-direction: column; gap: 0.5rem; }
+      .action-button { background-color: var(--brand-secondary); padding: 0.75rem; border-radius: var(--card-radius); display: flex; align-items: center; width: 100%; text-align: left; text-decoration: none; color: inherit; transition: background-color 0.2s; }
+      .action-button:hover { background-color: #2a2a3e; } .icon { width: 1.5rem; height: 1.5rem; margin-right: 0.75rem; }
+      .side-icon { margin-left: 0.75rem; color: var(--brand-text-secondary); } .button-label { flex-grow: 1; font-weight: 500; }
+      .qr-container { background-color: white; padding: 0.75rem; border-radius: var(--card-radius); margin: 0 auto; max-width: 200px; }
+      .qr-container img { display: block; width: 100%; height: auto; } .divider { border-color: var(--brand-secondary); }
+      .info-group { display: flex; flex-direction: column; gap: 0.75rem; }
+      .info-line { display: flex; align-items: center; font-size: 0.875rem; }
+      .info-line .icon { width: 1.25rem; height: 1.25rem; color: var(--brand-text-secondary); }
+      .social-group { display: flex; justify-content: center; align-items: center; gap: 1rem; padding-top: 0.5rem; }
+      .social-group a { color: var(--brand-text-secondary); transition: color 0.2s; } .social-group a:hover { color: white; }
+      .social-group .icon { width: 2rem; height: 2rem; margin: 0; }
+      .footer { text-align: center; font-size: 0.75rem; color: var(--brand-text-secondary); padding-top: 0.5rem; border-top: 1px solid var(--brand-secondary); }
+      .footer p { margin: 0.25rem 0; } .footer a { color: inherit; text-decoration: none; } .footer a:hover { text-decoration: underline; }
+    `.replace(/\s\s+/g, ' ');
+};
+
+const generateConnectCardBodyHtml = (cardData: ConnectCardData): string => {
+    const { name, tagline, url, phone, email, address, hours, socials, legal, qrUrl, features } = cardData;
+
+    const actionButton = (label: string, href: string, iconName: string, sideIconName?: string) => `
+        <a href="${escapeHtml(href)}" class="action-button">
+            ${getIconSvg(iconName)} <span class="button-label">${escapeHtml(label)}</span>
+            ${sideIconName ? `<span class="side-icon">${getIconSvg(sideIconName)}</span>` : ''}
+        </a>`;
+    
+    const fullAddress = [address.street, address.city].filter(Boolean).join(', ');
+
+    return `
+        <div class="card-container">
+            <div class="card-content">
+                <div class="header">
+                    <h2>${escapeHtml(name) || "Muster GmbH"}</h2>
+                    <p>${escapeHtml(tagline) || "Automatisierung einfach gemacht"}</p>
+                </div>
+                <div class="button-group">
+                    ${features.website && url ? actionButton("Website öffnen", url, 'website') : ''}
+                    ${features.call && phone ? actionButton("Anrufen", `tel:${phone}`, 'phone', 'copy') : ''}
+                    ${features.email && email ? actionButton("E-Mail senden", `mailto:${email}`, 'mail', 'copy') : ''}
+                    ${features.vcard && name ? `<a href="#" class="action-button">${getIconSvg('vcard')} <span class="button-label">vCard herunterladen</span></a>` : ''}
+                </div>
+                ${features.qr && qrUrl ? `<div class="qr-container"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=FFFFFF&color=000000&qzone=1" alt="QR Code for ${escapeHtml(name)}" /></div>` : ''}
+                ${features.copyLink && url ? `<a href="#" class="action-button">${getIconSvg('copy')} <span class="button-label">Link kopieren</span></a>` : ''}
+                ${(features.address && fullAddress) || (features.hours && hours) ? `<hr class="divider" />` : ''}
+                <div class="info-group">
+                    ${features.address && fullAddress ? `<div class="info-line">${getIconSvg('building')} <span>${escapeHtml(fullAddress)}</span></div>` : ''}
+                    ${features.hours && hours ? `<div class="info-line">${getIconSvg('clock')} <span>${escapeHtml(hours)}</span></div>` : ''}
+                </div>
+                ${features.socials && socials.length > 0 ? `
+                    <div class="social-group">
+                        ${socials.map(s => `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">${getIconSvg(s.type)}</a>`).join('')}
+                    </div>
+                ` : ''}
+                ${features.legal && (legal.imprint || legal.privacy) ? `
+                    <div class="footer">
+                        <p><strong>${escapeHtml(name)}</strong></p>
+                        <p>
+                            ${legal.imprint ? `<a href="${escapeHtml(legal.imprint)}">Impressum</a>` : ''}
+                            ${legal.imprint && legal.privacy ? ' &middot; ' : ''}
+                            ${legal.privacy ? `<a href="${escapeHtml(legal.privacy)}">Datenschutz</a>` : ''}
+                        </p>
+                    </div>
+                ` : ''}
+            </div>
+        </div>`;
+};
+
+// --- End of Generation Helpers ---
 
 
 export const ConnectCardGenerator: React.FC = () => {
@@ -179,79 +261,8 @@ export const ConnectCardGenerator: React.FC = () => {
     };
 
     const generateConnectCardHtml = useCallback((cardData: ConnectCardData): string => {
-        const { name, tagline, url, phone, email, address, hours, socials, legal, qrUrl, features, theme } = cardData;
-
-        const getCss = () => `
-          :root {
-            --brand-primary: #0D0D1A; --brand-secondary: #1A1A2E; --brand-accent: ${escapeHtml(theme.accent)};
-            --brand-text: #EAEAEA; --brand-text-secondary: #A9A9A9; --card-radius: ${theme.radius}px;
-          }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--brand-secondary); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 2rem; box-sizing: border-box; }
-          .card-container { background-color: var(--brand-primary); color: var(--brand-text); padding: 1rem; border-radius: calc(var(--card-radius) * 1.5); border: 2px solid var(--brand-secondary); max-width: 24rem; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
-          .card-content { display: flex; flex-direction: column; gap: 1rem; }
-          .header { text-align: center; } .header h2 { font-size: 1.5rem; font-weight: 700; margin: 0; }
-          .header p { color: var(--brand-text-secondary); font-size: 0.875rem; margin: 0.25rem 0 0 0; }
-          .button-group { display: flex; flex-direction: column; gap: 0.5rem; }
-          .action-button { background-color: var(--brand-secondary); padding: 0.75rem; border-radius: var(--card-radius); display: flex; align-items: center; width: 100%; text-align: left; text-decoration: none; color: inherit; transition: background-color 0.2s; }
-          .action-button:hover { background-color: #2a2a3e; } .icon { width: 1.5rem; height: 1.5rem; margin-right: 0.75rem; }
-          .side-icon { margin-left: 0.75rem; color: var(--brand-text-secondary); } .button-label { flex-grow: 1; font-weight: 500; }
-          .qr-container { background-color: white; padding: 0.75rem; border-radius: var(--card-radius); margin: 0 auto; max-width: 200px; }
-          .qr-container img { display: block; width: 100%; height: auto; } .divider { border-color: var(--brand-secondary); }
-          .info-group { display: flex; flex-direction: column; gap: 0.75rem; }
-          .info-line { display: flex; align-items: center; font-size: 0.875rem; }
-          .info-line .icon { width: 1.25rem; height: 1.25rem; color: var(--brand-text-secondary); }
-          .social-group { display: flex; justify-content: center; align-items: center; gap: 1rem; padding-top: 0.5rem; }
-          .social-group a { color: var(--brand-text-secondary); transition: color 0.2s; } .social-group a:hover { color: white; }
-          .social-group .icon { width: 2rem; height: 2rem; margin: 0; }
-          .footer { text-align: center; font-size: 0.75rem; color: var(--brand-text-secondary); padding-top: 0.5rem; border-top: 1px solid var(--brand-secondary); }
-          .footer p { margin: 0.25rem 0; } .footer a { color: inherit; text-decoration: none; } .footer a:hover { text-decoration: underline; }
-        `.replace(/\s\s+/g, ' ');
-
-        const actionButton = (label: string, href: string, iconName: string, sideIconName?: string) => `
-            <a href="${escapeHtml(href)}" class="action-button">
-                ${getIconSvg(iconName)} <span class="button-label">${escapeHtml(label)}</span>
-                ${sideIconName ? `<span class="side-icon">${getIconSvg(sideIconName)}</span>` : ''}
-            </a>`;
-        
-        const fullAddress = [address.street, address.city].filter(Boolean).join(', ');
-
-        const bodyHtml = `
-            <div class="card-container">
-                <div class="card-content">
-                    <div class="header">
-                        <h2>${escapeHtml(name) || "Muster GmbH"}</h2>
-                        <p>${escapeHtml(tagline) || "Automatisierung einfach gemacht"}</p>
-                    </div>
-                    <div class="button-group">
-                        ${features.website && url ? actionButton("Website öffnen", url, 'website') : ''}
-                        ${features.call && phone ? actionButton("Anrufen", `tel:${phone}`, 'phone', 'copy') : ''}
-                        ${features.email && email ? actionButton("E-Mail senden", `mailto:${email}`, 'mail', 'copy') : ''}
-                        ${features.vcard && name ? `<a href="#" class="action-button">${getIconSvg('vcard')} <span class="button-label">vCard herunterladen</span></a>` : ''}
-                    </div>
-                    ${features.qr && qrUrl ? `<div class="qr-container"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}&bgcolor=FFFFFF&color=000000&qzone=1" alt="QR Code for ${escapeHtml(name)}" /></div>` : ''}
-                    ${features.copyLink && url ? `<a href="#" class="action-button">${getIconSvg('copy')} <span class="button-label">Link kopieren</span></a>` : ''}
-                    ${(features.address && fullAddress) || (features.hours && hours) ? `<hr class="divider" />` : ''}
-                    <div class="info-group">
-                        ${features.address && fullAddress ? `<div class="info-line">${getIconSvg('building')} <span>${escapeHtml(fullAddress)}</span></div>` : ''}
-                        ${features.hours && hours ? `<div class="info-line">${getIconSvg('clock')} <span>${escapeHtml(hours)}</span></div>` : ''}
-                    </div>
-                    ${features.socials && socials.length > 0 ? `
-                        <div class="social-group">
-                            ${socials.map(s => `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">${getIconSvg(s.type)}</a>`).join('')}
-                        </div>
-                    ` : ''}
-                    ${features.legal && (legal.imprint || legal.privacy) ? `
-                        <div class="footer">
-                            <p><strong>${escapeHtml(name)}</strong></p>
-                            <p>
-                                ${legal.imprint ? `<a href="${escapeHtml(legal.imprint)}">Impressum</a>` : ''}
-                                ${legal.imprint && legal.privacy ? ' &middot; ' : ''}
-                                ${legal.privacy ? `<a href="${escapeHtml(legal.privacy)}">Datenschutz</a>` : ''}
-                            </p>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>`;
+        const css = generateConnectCardCss(cardData.theme);
+        const bodyHtml = generateConnectCardBodyHtml(cardData);
 
         return `
             <!DOCTYPE html>
@@ -259,8 +270,8 @@ export const ConnectCardGenerator: React.FC = () => {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Connect Card: ${escapeHtml(name)}</title>
-                <style>${getCss()}</style>
+                <title>Connect Card: ${escapeHtml(cardData.name)}</title>
+                <style>${css}</style>
             </head>
             <body>
                 ${bodyHtml}
@@ -292,6 +303,26 @@ export const ConnectCardGenerator: React.FC = () => {
             setToast('Kopieren fehlgeschlagen.');
         });
     }, [data, generateConnectCardHtml]);
+
+    const handleCopyHtmlOnly = useCallback(() => {
+        const bodyHtml = generateConnectCardBodyHtml(data);
+        navigator.clipboard.writeText(bodyHtml).then(() => {
+            setToast('Nur HTML-Code in die Zwischenablage kopiert!');
+        }).catch(err => {
+            console.error('Copy failed', err);
+            setToast('Kopieren fehlgeschlagen.');
+        });
+    }, [data]);
+
+    const handleCopyCssOnly = useCallback(() => {
+        const css = generateConnectCardCss(data.theme);
+        navigator.clipboard.writeText(css).then(() => {
+            setToast('Nur CSS-Code in die Zwischenablage kopiert!');
+        }).catch(err => {
+            console.error('Copy failed', err);
+            setToast('Kopieren fehlgeschlagen.');
+        });
+    }, [data.theme]);
 
     const handleDownloadVCard = useCallback(() => {
         const { name, tagline, phone, email, url, address } = data;
@@ -361,10 +392,16 @@ export const ConnectCardGenerator: React.FC = () => {
                     <h2 className="text-2xl font-bold mb-4">3. Exportieren</h2>
                     <div className="space-y-3">
                         <button onClick={handleDownloadHtml} className="w-full flex items-center justify-center gap-2 bg-brand-accent text-white font-bold rounded-lg p-3 hover:bg-brand-accent-hover transition-colors">
-                            <IconDownload className="w-5 h-5"/> Download .html
+                            <IconDownload className="w-5 h-5"/> Download .html (Komplett)
                         </button>
                         <button onClick={handleCopyHtml} className="w-full flex items-center justify-center gap-2 bg-brand-secondary text-brand-text font-bold rounded-lg p-3 hover:bg-brand-primary transition-colors">
-                           <IconCopy className="w-5 h-5"/> Code kopieren
+                           <IconCopy className="w-5 h-5"/> Code kopieren (Komplett)
+                        </button>
+                        <button onClick={handleCopyHtmlOnly} className="w-full flex items-center justify-center gap-2 bg-brand-secondary text-brand-text font-bold rounded-lg p-3 hover:bg-brand-primary transition-colors">
+                           <IconCopy className="w-5 h-5"/> Nur HTML kopieren
+                        </button>
+                        <button onClick={handleCopyCssOnly} className="w-full flex items-center justify-center gap-2 bg-brand-secondary text-brand-text font-bold rounded-lg p-3 hover:bg-brand-primary transition-colors">
+                           <IconCopy className="w-5 h-5"/> Nur CSS kopieren
                         </button>
                          <button onClick={handleDownloadVCard} className="w-full flex items-center justify-center gap-2 bg-brand-secondary text-brand-text font-bold rounded-lg p-3 hover:bg-brand-primary transition-colors">
                            <IconVCard className="w-5 h-5"/> Download .vcf
