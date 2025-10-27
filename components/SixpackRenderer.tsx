@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Job, CIColors, Panel, SectionLabels, ExportProfile, PanelResult, LintIssue, SeoData, Warning, ValidationError } from '../types';
 import AccordionPanel from './AccordionPanel';

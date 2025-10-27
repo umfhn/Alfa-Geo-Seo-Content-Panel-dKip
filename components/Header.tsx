@@ -38,6 +38,10 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onSystemCheckCl
             <button onClick={() => onNavigate('generator')} className={`${navButtonStyle} ${activeView === 'generator' ? activeNavButtonStyle : inactiveNavButtonStyle}`}>
               Connect-Card Generator
             </button>
+            {/* FIX: Add button to navigate to the Layout Module view. */}
+            <button onClick={() => onNavigate('layout_module')} className={`${navButtonStyle} ${activeView === 'layout_module' ? activeNavButtonStyle : inactiveNavButtonStyle}`}>
+              Layout Module
+            </button>
           </nav>
            <div className="flex items-center space-x-2">
             <div className="hidden sm:flex items-center space-x-2 text-brand-text-secondary">

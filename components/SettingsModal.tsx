@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, ChangeEvent } from 'react';
 import type { Sixpack, VCardData, Meta, Geo } from '../types';
 import { IconDownload, IconCopy, IconVCard } from './Icons';
@@ -180,7 +179,8 @@ END:VCARD`;
             </div>
         </div>
 
-        <div className="p-6 overflow-y-auto">
+        <div className="overflow-y-auto">
+          <div className="p-6">
             {activeTab === 'impressum' && (
                 <div>
                     <h3 className="text-lg font-semibold mb-2">Impressum-Vorlage</h3>
@@ -282,6 +282,7 @@ END:VCARD`;
                     </select>
                 </div>
             )}
+          </div>
         </div>
       </div>
     </div>

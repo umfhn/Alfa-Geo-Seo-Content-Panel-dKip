@@ -1,111 +1,10 @@
 
-
 import React from 'react';
 import { type LayoutConfig, ButtonVariant, ButtonPosition } from '../types';
 
 interface LayoutPreviewProps {
   config: LayoutConfig;
 }
-
-const LayoutPreview: React.FC<LayoutPreviewProps> = ({ config }) => {
-  const { frame_variant, content_variant, show_header, show_footer, tokens, buttons, module_label } = config;
-
-  const dynamicStyles: React.CSSProperties = {
-    '--dkip-layout-primary': tokens.primary,
-    '--dkip-layout-surface': tokens.surface,
-    '--dkip-layout-text': tokens.text,
-    '--dkip-layout-border': tokens.border,
-    '--dkip-layout-gap': `${tokens.gap_px}px`,
-    '--dkip-layout-radius': `${tokens.radius_px}px`,
-  } as React.CSSProperties;
-
-  const getButtonsForPosition = (pos: ButtonPosition) => {
-    return buttons.filter(btn => btn.pos === pos);
-  };
-  
-  const getButtonClass = (variant: ButtonVariant) => {
-    switch(variant) {
-      case ButtonVariant.PRIMARY:
-        return 'dkip-layout-btn-primary';
-      case ButtonVariant.SECONDARY:
-        return 'dkip-layout-btn-secondary';
-      case ButtonVariant.GHOST:
-        return 'dkip-layout-btn-ghost';
-      default:
-        return '';
-    }
-  };
-
-  const renderButtons = (pos: ButtonPosition) => {
-    const posButtons = getButtonsForPosition(pos);
-    if (posButtons.length === 0) return null;
-    
-    return (
-      <div className="dkip-layout__button-group">
-        {posButtons.map(btn => (
-          <a key={btn.id} href={btn.url || '#'} className={`dkip-layout-btn ${getButtonClass(btn.variant)}`}>
-            {btn.label}
-          </a>
-        ))}
-      </div>
-    );
-  };
-  
-  const renderContentPlaceholder = () => {
-    const baseClasses = "dkip-layout-placeholder__block";
-    switch(content_variant) {
-      case 'L1': // Stack
-        return <div className="dkip-layout-placeholder dkip-layout-placeholder--stack"><div className={baseClasses}></div><div className={baseClasses}></div></div>;
-      case 'L2': // Split
-        return <div className="dkip-layout-placeholder dkip-layout-placeholder--split"><div className={baseClasses}></div><div className={baseClasses}></div></div>;
-      case 'L3': // Grid
-        return <div className="dkip-layout-placeholder dkip-layout-placeholder--grid"><div className={baseClasses}></div><div className={baseClasses}></div><div className={baseClasses}></div><div className={baseClasses}></div></div>;
-      case 'L4': // Accordion
-        return <div className="dkip-layout-placeholder dkip-layout-placeholder--accordion"><div className={baseClasses}></div><div className={baseClasses}></div><div className={baseClasses}></div></div>;
-      default:
-        return null;
-    }
-  };
-  
-  const frameClasses = `dkip-layout__shell dkip-layout__frame--${frame_variant.toLowerCase()}`;
-
-  return (
-    <div className="dkip-layout" style={dynamicStyles}>
-      <style>{previewStyles}</style>
-      <div className={frameClasses}>
-        <div className="dkip-layout__app-bar">App Bar</div>
-        <div className="dkip-layout__body">
-          {show_header && (
-            <header className="dkip-layout__header">
-              <div className="dkip-layout__header-content">
-                <p>Header</p>
-                {renderButtons(ButtonPosition.HEADER)}
-              </div>
-            </header>
-          )}
-
-          <main className="dkip-layout__content">
-            {renderContentPlaceholder()}
-            {renderButtons(ButtonPosition.CONTENT)}
-          </main>
-          
-          {show_footer && (
-            <footer className="dkip-layout__footer">
-               <div className="dkip-layout__footer-content">
-                <p>Footer</p>
-                 {renderButtons(ButtonPosition.FOOTER)}
-               </div>
-            </footer>
-          )}
-        </div>
-        <div className="dkip-layout__nav-bar">Nav Bar</div>
-      </div>
-       <p className="dkip-layout__module-label">{module_label}</p>
-    </div>
-  );
-};
-
-export default LayoutPreview;
 
 const previewStyles = `
 /* --- Base Structure --- */
@@ -221,4 +120,104 @@ const previewStyles = `
   color: var(--dkip-layout-text);
   opacity: 0.7;
 }
-`
+`;
+
+const LayoutPreview: React.FC<LayoutPreviewProps> = ({ config }) => {
+  const { frame_variant, content_variant, show_header, show_footer, tokens, buttons, module_label } = config;
+
+  const dynamicStyles: React.CSSProperties = {
+    '--dkip-layout-primary': tokens.primary,
+    '--dkip-layout-surface': tokens.surface,
+    '--dkip-layout-text': tokens.text,
+    '--dkip-layout-border': tokens.border,
+    '--dkip-layout-gap': `${tokens.gap_px}px`,
+    '--dkip-layout-radius': `${tokens.radius_px}px`,
+  } as React.CSSProperties;
+
+  const getButtonsForPosition = (pos: ButtonPosition) => {
+    return buttons.filter(btn => btn.pos === pos);
+  };
+  
+  const getButtonClass = (variant: ButtonVariant) => {
+    switch(variant) {
+      case ButtonVariant.PRIMARY:
+        return 'dkip-layout-btn-primary';
+      case ButtonVariant.SECONDARY:
+        return 'dkip-layout-btn-secondary';
+      case ButtonVariant.GHOST:
+        return 'dkip-layout-btn-ghost';
+      default:
+        return '';
+    }
+  };
+
+  const renderButtons = (pos: ButtonPosition) => {
+    const posButtons = getButtonsForPosition(pos);
+    if (posButtons.length === 0) return null;
+    
+    return (
+      <div className="dkip-layout__button-group">
+        {posButtons.map(btn => (
+          <a key={btn.id} href={btn.url || '#'} className={`dkip-layout-btn ${getButtonClass(btn.variant)}`}>
+            {btn.label}
+          </a>
+        ))}
+      </div>
+    );
+  };
+  
+  const renderContentPlaceholder = () => {
+    const baseClasses = "dkip-layout-placeholder__block";
+    switch(content_variant) {
+      case 'L1': // Stack
+        return <div className="dkip-layout-placeholder dkip-layout-placeholder--stack"><div className={baseClasses}></div><div className={baseClasses}></div></div>;
+      case 'L2': // Split
+        return <div className="dkip-layout-placeholder dkip-layout-placeholder--split"><div className={baseClasses}></div><div className={baseClasses}></div></div>;
+      case 'L3': // Grid
+        return <div className="dkip-layout-placeholder dkip-layout-placeholder--grid"><div className={baseClasses}></div><div className={baseClasses}></div><div className={baseClasses}></div><div className={baseClasses}></div></div>;
+      case 'L4': // Accordion
+        return <div className="dkip-layout-placeholder dkip-layout-placeholder--accordion"><div className={baseClasses}></div><div className={baseClasses}></div><div className={baseClasses}></div></div>;
+      default:
+        return null;
+    }
+  };
+  
+  const frameClasses = `dkip-layout__shell dkip-layout__frame--${frame_variant.toLowerCase()}`;
+
+  return (
+    <div className="dkip-layout" style={dynamicStyles}>
+      <style>{previewStyles}</style>
+      <div className={frameClasses}>
+        <div className="dkip-layout__app-bar">App Bar</div>
+        <div className="dkip-layout__body">
+          {show_header && (
+            <header className="dkip-layout__header">
+              <div className="dkip-layout__header-content">
+                <p>Header</p>
+                {renderButtons(ButtonPosition.HEADER)}
+              </div>
+            </header>
+          )}
+
+          <main className="dkip-layout__content">
+            {renderContentPlaceholder()}
+            {renderButtons(ButtonPosition.CONTENT)}
+          </main>
+          
+          {show_footer && (
+            <footer className="dkip-layout__footer">
+               <div className="dkip-layout__footer-content">
+                <p>Footer</p>
+                 {renderButtons(ButtonPosition.FOOTER)}
+               </div>
+            </footer>
+          )}
+        </div>
+        <div className="dkip-layout__nav-bar">Nav Bar</div>
+      </div>
+       <p className="dkip-layout__module-label">{module_label}</p>
+    </div>
+  );
+};
+
+export default LayoutPreview;

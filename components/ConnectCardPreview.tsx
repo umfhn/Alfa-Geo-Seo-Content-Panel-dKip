@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import type { ConnectCardData, SocialType } from '../types';
 import { 
@@ -47,8 +46,8 @@ export const ConnectCardPreview: React.FC<ConnectCardPreviewProps> = ({ data }) 
     const fullAddress = [address.street, address.city].filter(Boolean).join(', ');
 
     return (
-        <div className="bg-brand-primary text-brand-text p-4 rounded-2xl border-2 border-brand-secondary max-w-sm mx-auto shadow-2xl">
-            <div className="space-y-4">
+        <div className="bg-brand-primary text-brand-text rounded-2xl border-2 border-brand-secondary max-w-sm mx-auto shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div className="space-y-4 py-4 px-4">
                 {/* Header */}
                 <div className="text-center">
                     <h2 className="text-2xl font-bold">{name || "Muster GmbH"}</h2>

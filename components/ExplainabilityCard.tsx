@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { PanelResult, QualityScoreBreakdown, QualityScoreBreakdownValue } from '../types';
 import { IconShieldCheck, IconLock } from './Icons';
@@ -94,86 +93,88 @@ export const ExplainabilityCard: React.FC<ExplainabilityCardProps> = ({ panelRes
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-brand-primary text-2xl" aria-label="Schließen">&times;</button>
                 </div>
 
-                <div className="p-6 overflow-y-auto space-y-6">
-                    <div>
-                        <h3 className="font-semibold text-brand-text mb-2">Titel der Sektion</h3>
-                        <p className="bg-brand-primary p-3 rounded-md text-brand-text-secondary">{panel?.title || 'N/A'}</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Left Column */}
-                        <div className="space-y-6">
-                             <div>
-                                <h3 className="font-semibold text-brand-text mb-3">Gesamt-Qualitätsscore</h3>
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-24 h-24 rounded-full flex items-center justify-center bg-brand-primary border-4 border-brand-accent">
-                                        <span className="text-4xl font-bold">{panelResult.quality_score || 0}</span>
-                                    </div>
-                                    <div className="flex-1">
-                                       <QualityScoreBreakdownComponent breakdown={linting_results.quality_score_breakdown} />
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-brand-text mb-2">Linter-Checkliste</h3>
-                                <ul className="space-y-2 text-sm">
-                                   <CheckListItem label="Inhaltliche Einzigartigkeit" passed={!hasLowVariance} details={varianceDetails} />
-                                   <CheckListItem label="Titel enthält GEO-Bezug" passed={!hasNoGeo} />
-                                   <CheckListItem label="Keine offenen Platzhalter" passed={!hasPlaceholder} />
-                                   <CheckListItem label="Keyword-Anzahl (≥ 5)" passed={!hasLowKeywords} />
-                                </ul>
-                            </div>
-                            {segment_locks && (
-                                <div>
-                                    <h3 className="font-semibold text-brand-text mb-2">Status der Segmentsperren</h3>
-                                    <div className="flex flex-wrap gap-2 text-xs">
-                                        {Object.entries(segment_locks).map(([key, locked]) => (
-                                            <span key={key} className={`flex items-center space-x-1 px-2.5 py-1 rounded-full ${locked ? 'bg-blue-500/20 text-blue-300' : 'bg-gray-500/20 text-gray-400'}`}>
-                                                {locked && <IconLock className="w-3 h-3"/>}
-                                                <span className="capitalize">{key}</span>
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                <div className="overflow-y-auto">
+                    <div className="p-6 space-y-6">
+                        <div>
+                            <h3 className="font-semibold text-brand-text mb-2">Titel der Sektion</h3>
+                            <p className="bg-brand-primary p-3 rounded-md text-brand-text-secondary">{panel?.title || 'N/A'}</p>
                         </div>
 
-                        {/* Right Column */}
-                        <div className="space-y-6">
-                             <div>
-                                <h3 className="font-semibold text-brand-text mb-2">Datenbasis & Metriken</h3>
-                                <div className="space-y-2 text-sm">
-                                    <div className="bg-brand-primary p-2 rounded-md flex justify-between">
-                                        <span className="text-xs text-brand-text-secondary/70">Quelle</span>
-                                        <span className="font-semibold">{explainability.source_info}</span>
-                                    </div>
-                                    <div className="bg-brand-primary p-2 rounded-md flex justify-between">
-                                        <span className="text-xs text-brand-text-secondary/70">Dauer</span>
-                                        <span className="font-semibold">{explainability.duration_ms} ms</span>
-                                    </div>
-                                    <div className="bg-brand-primary p-2 rounded-md">
-                                        <p className="text-xs text-brand-text-secondary/70 mb-1">Payload Hash</p>
-                                        <p className="font-mono text-xs break-all">{explainability.payload_hash}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Left Column */}
+                            <div className="space-y-6">
+                                 <div>
+                                    <h3 className="font-semibold text-brand-text mb-3">Gesamt-Qualitätsscore</h3>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-24 h-24 rounded-full flex items-center justify-center bg-brand-primary border-4 border-brand-accent">
+                                            <span className="text-4xl font-bold">{panelResult.quality_score || 0}</span>
+                                        </div>
+                                        <div className="flex-1">
+                                           <QualityScoreBreakdownComponent breakdown={linting_results.quality_score_breakdown} />
+                                        </div>
                                     </div>
                                 </div>
+                                <div>
+                                    <h3 className="font-semibold text-brand-text mb-2">Linter-Checkliste</h3>
+                                    <ul className="space-y-2 text-sm">
+                                       <CheckListItem label="Inhaltliche Einzigartigkeit" passed={!hasLowVariance} details={varianceDetails} />
+                                       <CheckListItem label="Titel enthält GEO-Bezug" passed={!hasNoGeo} />
+                                       <CheckListItem label="Keine offenen Platzhalter" passed={!hasPlaceholder} />
+                                       <CheckListItem label="Keyword-Anzahl (≥ 5)" passed={!hasLowKeywords} />
+                                    </ul>
+                                </div>
+                                {segment_locks && (
+                                    <div>
+                                        <h3 className="font-semibold text-brand-text mb-2">Status der Segmentsperren</h3>
+                                        <div className="flex flex-wrap gap-2 text-xs">
+                                            {Object.entries(segment_locks).map(([key, locked]) => (
+                                                <span key={key} className={`flex items-center space-x-1 px-2.5 py-1 rounded-full ${locked ? 'bg-blue-500/20 text-blue-300' : 'bg-gray-500/20 text-gray-400'}`}>
+                                                    {locked && <IconLock className="w-3 h-3"/>}
+                                                    <span className="capitalize">{key}</span>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            
-                            {allErrors.length > 0 && (
+
+                            {/* Right Column */}
+                            <div className="space-y-6">
                                  <div>
-                                    <h3 className="font-semibold text-red-400 mb-2">Fehler (Export blockiert)</h3>
-                                    <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm space-y-1">
-                                        {allErrors.map((error, i) => <p key={`err-${i}`}>- {error.message}</p>)}
+                                    <h3 className="font-semibold text-brand-text mb-2">Datenbasis & Metriken</h3>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="bg-brand-primary p-2 rounded-md flex justify-between">
+                                            <span className="text-xs text-brand-text-secondary/70">Quelle</span>
+                                            <span className="font-semibold">{explainability.source_info}</span>
+                                        </div>
+                                        <div className="bg-brand-primary p-2 rounded-md flex justify-between">
+                                            <span className="text-xs text-brand-text-secondary/70">Dauer</span>
+                                            <span className="font-semibold">{explainability.duration_ms} ms</span>
+                                        </div>
+                                        <div className="bg-brand-primary p-2 rounded-md">
+                                            <p className="text-xs text-brand-text-secondary/70 mb-1">Payload Hash</p>
+                                            <p className="font-mono text-xs break-all">{explainability.payload_hash}</p>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
-                            {allWarnings.length > 0 && (
-                                 <div>
-                                    <h3 className="font-semibold text-yellow-400 mb-2">Warnungen</h3>
-                                    <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-200 p-3 rounded-lg text-sm space-y-1">
-                                        {allWarnings.map((warn, i) => <p key={`warn-${i}`}>- {warn.message}</p>)}
+                                
+                                {allErrors.length > 0 && (
+                                     <div>
+                                        <h3 className="font-semibold text-red-400 mb-2">Fehler (Export blockiert)</h3>
+                                        <div className="bg-red-900/50 border border-red-700 text-red-200 p-3 rounded-lg text-sm space-y-1">
+                                            {allErrors.map((error, i) => <p key={`err-${i}`}>- {error.message}</p>)}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                                {allWarnings.length > 0 && (
+                                     <div>
+                                        <h3 className="font-semibold text-yellow-400 mb-2">Warnungen</h3>
+                                        <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-200 p-3 rounded-lg text-sm space-y-1">
+                                            {allWarnings.map((warn, i) => <p key={`warn-${i}`}>- {warn.message}</p>)}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

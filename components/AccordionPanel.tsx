@@ -384,7 +384,7 @@ const AccordionPanel: React.FC<AccordionPanelProps> = ({
               <div key={index} style={accordionBorderStyle} className="border rounded-lg overflow-hidden">
                 <details className="dkip-accordion" open>
                     <summary onClick={(e) => { e.preventDefault(); toggleSection(index); }} className="dkip-accordion__summary w-full flex justify-between items-center text-left p-4 bg-brand-primary/30 hover:bg-brand-primary/60 transition-colors">
-                      <span style={accordionTitleStyle} className="font-semibold text-brand-text">{section.title}</span>
+                      <span style={accordionTitleStyle} className="font-semibold text-brand-text">{section.heading}</span>
                       <span className={`transform transition-transform duration-300 ${openSection === index ? 'rotate-180' : ''}`}>
                         &#9660;
                       </span>

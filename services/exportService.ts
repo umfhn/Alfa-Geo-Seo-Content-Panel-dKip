@@ -2,6 +2,7 @@
 
 import type { Panel, CIColors, Geo, SectionLabels, ExportProfile, Job, SeoData, Faq } from '../types';
 import { generateSeoMetadataFromContent } from './geminiService';
+import { buildFaqJsonLd, buildHowToJsonLd } from './structuredData';
 
 // --- HSL/Contrast Utility Functions ---
 
@@ -216,7 +217,7 @@ function generateSinglePanelCleanHtml(panel: Panel, sectionLabels: SectionLabels
         <h3 class="${p}section-title">${escapeHtml(sectionLabels.sections)}</h3>
         ${panel.sections.map((section, sectionIndex) => `
         <details class="${p}accordion"${sectionIndex === 0 ? ' open' : ''}>
-            <summary class="${p}accordion__summary">${escapeHtml(section.title)}</summary>
+            <summary class="${p}accordion__summary">${escapeHtml(section.heading)}</summary>
             <div class="${p}accordion__content">
                 <ul>
                     ${section.bullets.map(bullet => `<li>${escapeHtml(bullet)}</li>`).join('\n                    ')}
@@ -486,97 +487,74 @@ export function generateOnePageCss(job: Job): string {
     return getOnePageCss(ci_colors || defaultCIColors);
 }
 
-export function generateOnePageHtml(job: Job, options: { includeCss: boolean, forWp: boolean }): string {
+// FIX: Implemented the missing function to generate the full HTML for the one-page export.
+export function generateOnePageHtml(job: Job, options: { includeCss: boolean; forWp: boolean }): string {
     const { results } = job;
     const { geo, ci_colors, media, panels: panelResults, meta, section_labels } = results;
+    const colors = ci_colors || defaultCIColors;
+
+    // 1. Generate Panel Content and TOC
+    const successfulPanels = panelResults.filter(p => p.status === 'ok' && p.panel);
+    let panelContent = '';
+    let tocItems = '';
+    successfulPanels.forEach((p, index) => {
+        const panel = p.panel!;
+        const panelId = slugify(panel.title) + '-' + (index + 1);
+        panelContent += generateSinglePanelCleanHtml(panel, section_labels, index);
+        tocItems += `<li><a href="#${panelId}">${escapeHtml(panel.title)}</a></li>`;
+    });
     
-    if (!geo || !ci_colors || !media || !section_labels) return "<html><body>Fehler: Wichtige Daten für die Seitenerstellung fehlen.</body></html>";
-    const successfulPanels = panelResults.filter(p => p.status === 'ok' && p.panel).map(p => p.panel!);
-    if (successfulPanels.length === 0) return "<html><body>Fehler: Keine validen Sektionen zum Erstellen der Seite vorhanden.</body></html>";
+    // 2. Aggregate JSON-LD
+    const faqJsonLd = job.userInput.toggles?.generateFaqJsonLd ? buildFaqJsonLd(panelResults) : null;
+    const howToJsonLd = job.userInput.toggles?.generateHowToJsonLd ? buildHowToJsonLd(panelResults, results.topic || '') : null;
+    const allJsonLd = [faqJsonLd, howToJsonLd].filter(Boolean).map(jsonStr => JSON.parse(jsonStr!));
+    const finalJsonLd = allJsonLd.length > 0 ? JSON.stringify(allJsonLd, null, 2) : '{}';
 
-    // 1. Generate dynamic parts
-    const tocItems = successfulPanels.map((panel, index) => {
-        const title = panel.title || `Sektion ${index + 1}`;
-        const id = slugify(title) + '-' + (index + 1);
-        return `<li><a href="#${id}">${escapeHtml(title)}</a></li>`;
-    }).join('\n');
-
-    const panelContent = successfulPanels.map((panel, index) => generateSinglePanelCleanHtml(panel, section_labels, index)).join('\n\n');
-    
-    const galleryItems = media.gallery.map(item => 
-        `<a href="${escapeHtml(item.full)}"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.alt)}" loading="lazy" decoding="async"></a>`
-    ).join('\n');
-    
-    // 2. Build JSON-LD
-    const localBusinessSchema = {
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        "name": geo.companyName,
-        "address": {
-          "@type": "PostalAddress", "streetAddress": geo.street, "postalCode": geo.zip,
-          "addressLocality": geo.city, "addressRegion": geo.region, "addressCountry": "DE"
-        },
-        "telephone": geo.phone, "url": geo.website, "image": media.hero.jpg, "logo": media.logoUrl
-    };
-
-    const allFaqs = successfulPanels.flatMap(p => p.faqs || []);
-    const uniqueFaqs = [...new Map(allFaqs.map(faq => [faq.q, faq])).values()];
-    const faqSchema = uniqueFaqs.length > 0 ? {
-        "@context": "https://schema.org", "@type": "FAQPage",
-        "mainEntity": uniqueFaqs.map(faq => ({
-            "@type": "Question", "name": faq.q,
-            "acceptedAnswer": { "@type": "Answer", "text": faq.a }
-        }))
-    } : null;
-
-    const schemas: (typeof localBusinessSchema | typeof faqSchema)[] = [localBusinessSchema];
-    if (faqSchema) {
-        schemas.push(faqSchema);
+    // 3. Generate Gallery
+    let galleryItems = '';
+    if (media.gallery && media.gallery.length > 0) {
+        galleryItems = media.gallery.map(item => 
+            `<a href="${escapeHtml(item.full)}" target="_blank"><img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.alt)}" loading="lazy" decoding="async" /></a>`
+        ).join('\n');
     }
 
-    // 3. Prepare replacements
-    const replacements: Record<string, string> = {
-        '__PAGE_TITLE__': escapeHtml(meta?.title || `${geo.companyName} in ${geo.city}`),
-        '__META_DESCRIPTION__': escapeHtml(meta?.description || `Leistungen von ${geo.companyName}.`),
-        '__CANONICAL_URL__': escapeHtml(geo.website || '#'),
-        '__HERO_JPG__': escapeHtml(media.hero.jpg),
-        '__HERO_AVIF_1280__': escapeHtml(media.hero.avif1280 || media.hero.jpg),
-        '__HERO_AVIF_1920__': escapeHtml(media.hero.avif1920 || media.hero.jpg),
-        '__HERO_WEBP_1280__': escapeHtml(media.hero.webp1280 || media.hero.jpg),
-        '__HERO_WEBP_1920__': escapeHtml(media.hero.webp1920 || media.hero.jpg),
-        '__HERO_ALT__': escapeHtml(media.hero.alt),
-        '__HERO_HEADLINE__': escapeHtml(media.hero.headline),
-        '__HERO_SUBTITLE__': escapeHtml(media.hero.subtitle),
-        '__HERO_CTA_URL__': escapeHtml(media.hero.ctaUrl),
-        '__COMPANY_NAME__': escapeHtml(geo.companyName),
-        '__ADDRESS_LINE__': escapeHtml(`${geo.street} · ${geo.zip} ${geo.city} (${geo.region})`),
-        '__TOC_ITEMS__': tocItems,
-        '__ARTICLE_H1__': escapeHtml(meta?.title || results.topic || 'Unsere Leistungen'),
-        '__PANEL_CONTENT__': panelContent,
-        '__GALLERY_ITEMS__': galleryItems,
-        '__PHONE__': escapeHtml(geo.phone || ''),
-        '__EMAIL__': escapeHtml(geo.email || ''),
-        '__WEBSITE__': escapeHtml(geo.website || '#'),
-        '__YEAR__': new Date().getFullYear().toString(),
-        '__JSON_LD__': JSON.stringify(schemas, null, 2)
-    };
+    // 4. Populate Template
+    // FIX: Pass the 'job' object to 'generateOnePageCss' as required by its signature.
+    let html = options.forWp ? `
+<div data-dkip-scope="wp-block-${Date.now()}">
+    <style>${generateOnePageCss(job)}</style>
+    ${panelContent}
+</div>
+    ` : onePageTemplate;
+
+    if (!options.forWp) {
+        html = html
+            .replace('__PAGE_TITLE__', escapeHtml(meta?.title || geo.companyName))
+            .replace('__META_DESCRIPTION__', escapeHtml(meta?.description || ''))
+            .replace('__CANONICAL_URL__', escapeHtml(meta?.canonical || geo.website))
+            .replace('__HERO_JPG__', escapeHtml(media.hero.jpg))
+            .replace('__HERO_AVIF_1280__', escapeHtml(media.hero.avif1280))
+            .replace('__HERO_AVIF_1920__', escapeHtml(media.hero.avif1920))
+            .replace('__HERO_WEBP_1280__', escapeHtml(media.hero.webp1280))
+            .replace('__HERO_WEBP_1920__', escapeHtml(media.hero.webp1920))
+            .replace('__HERO_ALT__', escapeHtml(media.hero.alt))
+            .replace('__HERO_HEADLINE__', escapeHtml(media.hero.headline))
+            .replace('__HERO_SUBTITLE__', escapeHtml(media.hero.subtitle))
+            .replace('__HERO_CTA_URL__', escapeHtml(media.hero.ctaUrl))
+            .replace(/__COMPANY_NAME__/g, escapeHtml(geo.companyName))
+            .replace('__ADDRESS_LINE__', escapeHtml(`${geo.street}, ${geo.zip} ${geo.city}`))
+            .replace('__TOC_ITEMS__', tocItems)
+            .replace('__ARTICLE_H1__', escapeHtml(results.topic || geo.companyName))
+            .replace('__PANEL_CONTENT__', panelContent)
+            .replace('__GALLERY_ITEMS__', galleryItems)
+            .replace(/__PHONE__/g, escapeHtml(geo.phone))
+            .replace(/__EMAIL__/g, escapeHtml(geo.email))
+            .replace(/__WEBSITE__/g, escapeHtml(geo.website))
+            .replace('__YEAR__', new Date().getFullYear().toString())
+            .replace('__JSON_LD__', finalJsonLd)
+            // FIX: Pass the 'job' object to 'generateOnePageCss' as required by its signature.
+            .replace('__HEAD_CSS__', options.includeCss ? generateOnePageCss(job) : '/* CSS removed by export settings */');
+    }
     
-    // 4. Build final HTML
-    let finalHtml = onePageTemplate;
-    for(const [key, value] of Object.entries(replacements)) {
-        finalHtml = finalHtml.replace(new RegExp(key, 'g'), value);
-    }
-
-    if(options.includeCss) {
-        finalHtml = finalHtml.replace('__HEAD_CSS__', getOnePageCss(ci_colors));
-    } else {
-        finalHtml = finalHtml.replace(/<style>[\s\S]*?<\/style>/, '');
-    }
-
-    if(options.forWp) {
-        const containerMatch = finalHtml.match(/<div class="container">([\s\S]*)<\/div>\s*<script/);
-        return containerMatch ? containerMatch[1].trim() : 'Fehler: Container für WP-Export nicht gefunden.';
-    }
-
-    return finalHtml;
+    return html;
 }

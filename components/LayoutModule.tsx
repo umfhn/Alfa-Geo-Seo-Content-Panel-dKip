@@ -57,13 +57,15 @@ const editorStyles = `
 }
 .dkip-layout-editor__controls {
   background-color: var(--brand-secondary);
-  padding: 1.5rem;
   border-radius: 0.5rem;
+  height: 80vh;
+  overflow-y: auto;
+}
+.dkip-layout-editor__controls-inner {
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  height: 80vh;
-  overflow-y: auto;
 }
 .dkip-layout-editor__title { font-size: 1.5rem; font-weight: bold; text-align: center; }
 .dkip-layout-editor__subtitle { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; border-bottom: 1px solid var(--brand-primary); padding-bottom: 0.5rem; }
@@ -172,74 +174,76 @@ export const LayoutModule: React.FC = () => {
     <style>{editorStyles}</style>
     <div className="dkip-layout-editor__container">
       <div className="dkip-layout-editor__controls">
-        <h3 className="dkip-layout-editor__title">Layout-Konfiguration</h3>
-        <div className="dkip-layout-editor__section">
-            <label className="dkip-layout-editor__label" htmlFor="module_label">Modul-Beschriftung</label>
-            <input type="text" id="module_label" value={config.module_label} onChange={e => handleConfigChange('module_label', e.target.value)} className="dkip-layout-editor__input" />
-        </div>
+        <div className="dkip-layout-editor__controls-inner">
+          <h3 className="dkip-layout-editor__title">Layout-Konfiguration</h3>
+          <div className="dkip-layout-editor__section">
+              <label className="dkip-layout-editor__label" htmlFor="module_label">Modul-Beschriftung</label>
+              <input type="text" id="module_label" value={config.module_label} onChange={e => handleConfigChange('module_label', e.target.value)} className="dkip-layout-editor__input" />
+          </div>
 
-        <div className="dkip-layout-editor__section">
-            <VisualSelector label="Frame-Variante" value={config.frame_variant} onChange={v => handleConfigChange('frame_variant', v)} options={[
-                { value: FrameVariant.F1, label: 'Standard', icon: <IconLayoutFrame variant="F1" /> },
-                { value: FrameVariant.F2, label: 'Header-Fokus', icon: <IconLayoutFrame variant="F2" /> },
-                { value: FrameVariant.F3, label: 'Footer-Fokus', icon: <IconLayoutFrame variant="F3" /> },
-            ]} />
-        </div>
-        <div className="dkip-layout-editor__section">
-            <VisualSelector label="Content-Variante" value={config.content_variant} onChange={v => handleConfigChange('content_variant', v)} options={[
-                { value: ContentVariant.L1, label: 'Stack', icon: <IconLayoutStack /> },
-                { value: ContentVariant.L2, label: 'Split', icon: <IconLayoutSplit /> },
-                { value: ContentVariant.L3, label: 'Grid', icon: <IconLayoutGrid /> },
-                { value: ContentVariant.L4, label: 'Accordion', icon: <IconLayoutAccordion /> },
-            ]} />
-        </div>
-        
-        <div className="dkip-layout-editor__section dkip-layout-editor__toggles">
-          <label className="dkip-layout-editor__toggle">
-            <input type="checkbox" checked={config.show_header} onChange={e => handleConfigChange('show_header', e.target.checked)} />
-            <span>Header anzeigen</span>
-          </label>
-          <label className="dkip-layout-editor__toggle">
-            <input type="checkbox" checked={config.show_footer} onChange={e => handleConfigChange('show_footer', e.target.checked)} />
-            <span>Footer anzeigen</span>
-          </label>
-        </div>
+          <div className="dkip-layout-editor__section">
+              <VisualSelector label="Frame-Variante" value={config.frame_variant} onChange={v => handleConfigChange('frame_variant', v)} options={[
+                  { value: FrameVariant.F1, label: 'Standard', icon: <IconLayoutFrame variant="F1" /> },
+                  { value: FrameVariant.F2, label: 'Header-Fokus', icon: <IconLayoutFrame variant="F2" /> },
+                  { value: FrameVariant.F3, label: 'Footer-Fokus', icon: <IconLayoutFrame variant="F3" /> },
+              ]} />
+          </div>
+          <div className="dkip-layout-editor__section">
+              <VisualSelector label="Content-Variante" value={config.content_variant} onChange={v => handleConfigChange('content_variant', v)} options={[
+                  { value: ContentVariant.L1, label: 'Stack', icon: <IconLayoutStack /> },
+                  { value: ContentVariant.L2, label: 'Split', icon: <IconLayoutSplit /> },
+                  { value: ContentVariant.L3, label: 'Grid', icon: <IconLayoutGrid /> },
+                  { value: ContentVariant.L4, label: 'Accordion', icon: <IconLayoutAccordion /> },
+              ]} />
+          </div>
+          
+          <div className="dkip-layout-editor__section dkip-layout-editor__toggles">
+            <label className="dkip-layout-editor__toggle">
+              <input type="checkbox" checked={config.show_header} onChange={e => handleConfigChange('show_header', e.target.checked)} />
+              <span>Header anzeigen</span>
+            </label>
+            <label className="dkip-layout-editor__toggle">
+              <input type="checkbox" checked={config.show_footer} onChange={e => handleConfigChange('show_footer', e.target.checked)} />
+              <span>Footer anzeigen</span>
+            </label>
+          </div>
 
-        <div className="dkip-layout-editor__section">
-            <h4 className="dkip-layout-editor__subtitle">Design Tokens</h4>
-            <div className="dkip-layout-editor__token-grid">
-                <TokenInput label="Gap (px)" type="number" name="gap_px" value={config.tokens.gap_px} onChange={handleTokenChange} />
-                <TokenInput label="Radius (px)" type="number" name="radius_px" value={config.tokens.radius_px} onChange={handleTokenChange} />
-                <TokenInput label="Primär" type="color" name="primary" value={config.tokens.primary} onChange={handleTokenChange} />
-                <TokenInput label="Surface" type="color" name="surface" value={config.tokens.surface} onChange={handleTokenChange} />
-                <TokenInput label="Text" type="color" name="text" value={config.tokens.text} onChange={handleTokenChange} />
-                <TokenInput label="Border" type="color" name="border" value={config.tokens.border} onChange={handleTokenChange} />
-            </div>
-        </div>
+          <div className="dkip-layout-editor__section">
+              <h4 className="dkip-layout-editor__subtitle">Design Tokens</h4>
+              <div className="dkip-layout-editor__token-grid">
+                  <TokenInput label="Gap (px)" type="number" name="gap_px" value={config.tokens.gap_px} onChange={handleTokenChange} />
+                  <TokenInput label="Radius (px)" type="number" name="radius_px" value={config.tokens.radius_px} onChange={handleTokenChange} />
+                  <TokenInput label="Primär" type="color" name="primary" value={config.tokens.primary} onChange={handleTokenChange} />
+                  <TokenInput label="Surface" type="color" name="surface" value={config.tokens.surface} onChange={handleTokenChange} />
+                  <TokenInput label="Text" type="color" name="text" value={config.tokens.text} onChange={handleTokenChange} />
+                  <TokenInput label="Border" type="color" name="border" value={config.tokens.border} onChange={handleTokenChange} />
+              </div>
+          </div>
 
-        <div className="dkip-layout-editor__section">
-            <h4 className="dkip-layout-editor__subtitle">Buttons</h4>
-            <div className="dkip-layout-editor__repeater">
-              {config.buttons.map(btn => (
-                <div key={btn.id} className="dkip-layout-editor__repeater-item">
-                  <input type="text" value={btn.label} onChange={e => handleButtonChange(btn.id, 'label', e.target.value)} placeholder="Label" className="dkip-layout-editor__input" />
-                  <input type="text" value={btn.url} onChange={e => handleButtonChange(btn.id, 'url', e.target.value)} placeholder="URL" className="dkip-layout-editor__input" />
-                  <select value={btn.variant} onChange={e => handleButtonChange(btn.id, 'variant', e.target.value)} className="dkip-layout-editor__input">
-                    {Object.values(ButtonVariant).map(v => <option key={v} value={v}>{v}</option>)}
-                  </select>
-                   <select value={btn.pos} onChange={e => handleButtonChange(btn.id, 'pos', e.target.value)} className="dkip-layout-editor__input">
-                    {Object.values(ButtonPosition).map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                  <button onClick={() => handleRemoveButton(btn.id)} className="dkip-layout-editor__btn-icon"><IconTrash className="w-5 h-5" /></button>
-                </div>
-              ))}
-            </div>
-            <button onClick={handleAddButton} className="dkip-layout-editor__btn-add"><IconPlusCircle className="w-5 h-5" /> Button hinzufügen</button>
-        </div>
-         <div className="dkip-layout-editor__section dkip-layout-editor__io">
-            <button onClick={handleJsonExport} className="dkip-layout-editor__btn">Export JSON</button>
-            <button onClick={() => fileInputRef.current?.click()} className="dkip-layout-editor__btn">Import JSON</button>
-            <input type="file" ref={fileInputRef} onChange={handleJsonImport} accept=".json" style={{ display: 'none' }} />
+          <div className="dkip-layout-editor__section">
+              <h4 className="dkip-layout-editor__subtitle">Buttons</h4>
+              <div className="dkip-layout-editor__repeater">
+                {config.buttons.map(btn => (
+                  <div key={btn.id} className="dkip-layout-editor__repeater-item">
+                    <input type="text" value={btn.label} onChange={e => handleButtonChange(btn.id, 'label', e.target.value)} placeholder="Label" className="dkip-layout-editor__input" />
+                    <input type="text" value={btn.url} onChange={e => handleButtonChange(btn.id, 'url', e.target.value)} placeholder="URL" className="dkip-layout-editor__input" />
+                    <select value={btn.variant} onChange={e => handleButtonChange(btn.id, 'variant', e.target.value)} className="dkip-layout-editor__input">
+                      {Object.values(ButtonVariant).map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                     <select value={btn.pos} onChange={e => handleButtonChange(btn.id, 'pos', e.target.value)} className="dkip-layout-editor__input">
+                      {Object.values(ButtonPosition).map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    <button onClick={() => handleRemoveButton(btn.id)} className="dkip-layout-editor__btn-icon"><IconTrash className="w-5 h-5" /></button>
+                  </div>
+                ))}
+              </div>
+              <button onClick={handleAddButton} className="dkip-layout-editor__btn-add"><IconPlusCircle className="w-5 h-5" /> Button hinzufügen</button>
+          </div>
+           <div className="dkip-layout-editor__section dkip-layout-editor__io">
+              <button onClick={handleJsonExport} className="dkip-layout-editor__btn">Export JSON</button>
+              <button onClick={() => fileInputRef.current?.click()} className="dkip-layout-editor__btn">Import JSON</button>
+              <input type="file" ref={fileInputRef} onChange={handleJsonImport} accept=".json" style={{ display: 'none' }} />
+          </div>
         </div>
       </div>
       <div className="dkip-layout-editor__preview">

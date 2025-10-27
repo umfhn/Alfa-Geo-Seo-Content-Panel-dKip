@@ -123,7 +123,8 @@ export const validateJsonLd = (job: Job): ValidationError[] => {
         const validSteps = results.panels
             .filter(p => p.status === 'ok' && p.panel?.sections)
             .flatMap(p => p.panel!.sections)
-            .filter(section => section && section.title?.trim() && section.bullets?.length > 0);
+            // FIX: Changed 'section.title' to 'section.heading' to match the 'Section' type.
+            .filter(section => section && section.heading?.trim() && section.bullets?.length > 0);
         
         if (validSteps.length < 2) {
              errors.push({

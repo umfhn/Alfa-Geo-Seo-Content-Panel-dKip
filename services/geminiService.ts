@@ -39,14 +39,14 @@ const panelSchema = {
       items: {
         type: Type.OBJECT,
         properties: {
-          title: { type: Type.STRING, description: 'Der Titel des Akkordeon-Abschnitts.' },
+          heading: { type: Type.STRING, description: 'Die Überschrift des Akkordeon-Abschnitts.' },
           bullets: {
             type: Type.ARRAY,
             description: 'Eine Liste von 3-5 aussagekräftigen Stichpunkten.',
             items: { type: Type.STRING }
           }
         },
-        required: ['title', 'bullets']
+        required: ['heading', 'bullets']
       }
     },
     faqs: {

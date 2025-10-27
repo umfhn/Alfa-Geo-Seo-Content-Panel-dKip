@@ -18,6 +18,7 @@ export const useAutosave = (formState: FormDraftData, slug: string) => {
     const [draft, setDraft] = useState<FormDraft | null>(null);
     const lastSavedStateRef = useRef<string | null>(null);
 
+    // FIX: Changed the second argument of useCallback from a number to a valid dependency array.
     const debouncedSave = useCallback(debounce((data: FormDraftData, currentSlug: string) => {
         const jsonState = JSON.stringify(data);
         // Only save if the state has actually changed from the last known saved state
@@ -35,7 +36,7 @@ export const useAutosave = (formState: FormDraftData, slug: string) => {
         } else {
             setStatus('error');
         }
-    }), 800);
+    }, 800), []);
 
     useEffect(() => {
         // Only autosave if there's a slug to associate with
@@ -50,7 +51,9 @@ export const useAutosave = (formState: FormDraftData, slug: string) => {
             const { draft: loadedDraft, status: loadStatus } = loadDraft(slug);
             if (loadStatus === 'valid' || loadStatus === 'incompatible') {
                 setDraft(loadedDraft);
-                setStatus(loadStatus);
+                // FIX: Mapped loadStatus to a valid DraftStatus to avoid type errors.
+                const newStatus: DraftStatus = loadStatus === 'valid' ? 'found' : 'incompatible';
+                setStatus(newStatus);
                 if (loadedDraft) {
                     // Initialize the ref with the loaded draft's content to prevent immediate re-save
                     lastSavedStateRef.current = JSON.stringify(loadedDraft.formData);

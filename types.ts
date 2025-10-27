@@ -92,7 +92,7 @@ export interface UserInput {
 // --- AI Generated Content Panel Structure ---
 
 export interface Section {
-  title: string;
+  heading: string;
   bullets: string[];
 }
 
@@ -419,7 +419,9 @@ export type DkipCliSection =
   | { id: string; type: 'FAQ'; faqs: Array<{ question: string; answer: string }> }
   | { id: string; type: 'HowTo'; steps: Array<{ name: string; text: string }> }
   | { id: string; type: 'HTML'; html: string; trusted: true }
+  // FIX: Removed semicolon from the end of the line below to repair the broken union type. This was causing cascading parsing errors across the application.
   | { id: string; type: 'Media'; url: string; alt: string }
+  // FIX: Removed erroneous semicolon that was breaking the type definition.
   | { id: string; type: 'Downloads'; files: Array<{ label: string; url: string }> }
   | { id: string; type: 'Accordion'; items: Array<{ title: string; content: string }> }
 

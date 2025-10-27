@@ -67,8 +67,9 @@ export const buildDkipCliJson = (job: Job): DkipCliJson => {
                 sections.push({
                     id: `${baseId}-accordion`,
                     type: 'Accordion',
+                    // FIX: Changed 's.title' to 's.heading' to match the 'Section' type.
                     items: panel.sections.map(s => ({
-                        title: s.title.trim(),
+                        title: s.heading.trim(),
                         content: s.bullets.map(b => b.trim()).join('\n'),
                     })),
                 });

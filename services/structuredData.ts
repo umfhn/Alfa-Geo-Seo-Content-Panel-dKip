@@ -42,10 +42,10 @@ export const buildHowToJsonLd = (panels: PanelResult[], jobTopic: string): strin
   const validSteps = panels
     .filter(p => p.status === 'ok' && p.panel?.sections)
     .flatMap(p => p.panel!.sections)
-    .filter(section => section && section.title?.trim() && section.bullets?.length > 0)
+    .filter(section => section && section.heading?.trim() && section.bullets?.length > 0)
     .map(section => ({
       '@type': 'HowToStep',
-      name: section.title.trim(),
+      name: section.heading.trim(),
       text: section.bullets.map(b => b.trim()).join('\n'),
     }));
 

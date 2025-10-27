@@ -1,7 +1,4 @@
 
-
-
-
 import type { UserInput, Job, JobStep, PanelResult, HealthReport, Panel, LintingResults, Geo, QualityScoreBreakdownValue, PanelCount, PanelSegmentsLockState } from '../types';
 import { designPresets } from './exportService';
 import { generateSinglePanelLive, runAIPing, regeneratePanelSegment } from './geminiService';
@@ -35,7 +32,8 @@ const createDummyPanel = (index: number, topic: string, geo: Geo): Panel => ({
     title: `Mock-Titel für ${topic} in ${geo.city}`,
     kind: 'accordion',
     summary: `Dies ist eine Mock-Zusammenfassung für ${topic}, speziell für ${geo.companyName} in ${geo.city}.`,
-    sections: [{ title: 'Mock-Abschnitt', bullets: ['Stichpunkt 1', 'Stichpunkt 2'] }],
+    // FIX: Corrected property name from 'title' to 'heading' to match the 'Section' type definition.
+    sections: [{ heading: 'Mock-Abschnitt', bullets: ['Stichpunkt 1', 'Stichpunkt 2'] }],
     faqs: [{ q: 'Mock-Frage?', a: 'Mock-Antwort.' }],
     keywords: ['mock', topic, geo.city],
     sources: [],
@@ -349,15 +347,19 @@ export const controlJob = async (jobId: string, action: 'resume' | 'pause' | 'ne
                     const existingTitles = job.results.panels.filter(p => p.panel && p.index !== panelIndex).map(p => p.panel!.title);
                     const regeneratedPanel = await regeneratePanelSegment(job.userInput, panelToUpdate.panel!, segment, existingTitles);
 
-                    // Re-lint the updated panel
+                    // FIX: Re-lint the updated panel using more realistic data, similar to the 'run_linter' action.
                     const panelIssues = lintPanel(regeneratedPanel, job.results.geo?.city, job.results.geo?.region);
+                    const oldBreakdown = panelToUpdate.linting_results?.quality_score_breakdown || createDummyLintingResults(regeneratedPanel).quality_score_breakdown!;
                     const linting_results = {
                         passed: !panelIssues.some(i => i.severity === 'ERROR'),
                         has_warnings: panelIssues.some(i => i.severity === 'WARN'),
                         issues: panelIssues,
                         similarity_score: 0.1, // Dummy value
                         content_hash: calculatePanelContentHash(regeneratedPanel),
-                        quality_score_breakdown: createDummyLintingResults(regeneratedPanel).quality_score_breakdown
+                        quality_score_breakdown: {
+                            ...oldBreakdown,
+                            geo_integration: { score: panelIssues.some(i => i.code === 'TITLE_NO_GEO') ? 70 : 98, weight: 0.2 },
+                        }
                     };
 
                     const quality_score = Math.round(Object.values(linting_results.quality_score_breakdown || {}).reduce((acc, curr) => acc + curr.score * curr.weight, 0));
@@ -421,6 +423,13 @@ export const initJobFromStorage = (): Job | null => {
   if (!FLAGS.PERSISTENCE_MVP) return null;
   const job = loadActiveJob();
   if (job?.jobId) {
+    // Data integrity check: A valid job must have a results object.
+    // This prevents crashes from loading old/corrupted data from sessionStorage.
+    if (!job.results) {
+        console.warn("Loaded job from storage is missing the 'results' property. Discarding.", job);
+        clearActiveJob();
+        return null;
+    }
     jobDatabase.set(job.jobId, job);
     return job;
   }
